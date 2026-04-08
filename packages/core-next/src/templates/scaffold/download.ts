@@ -61,6 +61,13 @@ export async function unzipWithTransform(
 
     const originalName = entry.entryName;
 
+    // Zip Slip guard: reject entries containing path traversal sequences
+    if (originalName.indexOf("..") !== -1) {
+      throw new Error(
+        `Zip Slip detected: entry "${originalName}" contains path traversal sequence`
+      );
+    }
+
     // Apply filter
     if (ctx.filterFn && !ctx.filterFn(originalName)) {
       continue;
