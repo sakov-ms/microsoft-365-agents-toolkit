@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import type { TemplateRegistry, TemplateDescriptor } from "@microsoft/teamsfx-core";
+import type { TemplateRegistry, TemplateDescriptor } from "@microsoft/teamsfx-core-next";
 
 export interface TemplateRow {
   id: string;

@@ -14,7 +14,7 @@ import {
   signedIn,
   signedOut,
   UserError,
-} from "@microsoft/teamsfx-core";
+} from "@microsoft/teamsfx-core-next";
 import { CryptoCachePlugin, loadTenantId, saveTenantId } from "./cacheAccess";
 import { CodeFlowLogin } from "./codeFlowLogin";
 import { convertTokenToJson, checkIsOnline } from "./utils";

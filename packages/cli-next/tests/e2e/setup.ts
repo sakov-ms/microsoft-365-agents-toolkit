@@ -33,5 +33,5 @@ if (!fs.existsSync(logDir)) {
 }
 
 // Register builtin drivers for programmatic tests
-import { registerBuiltinDrivers } from "@microsoft/teamsfx-core";
+import { registerBuiltinDrivers } from "@microsoft/teamsfx-core-next";
 registerBuiltinDrivers();

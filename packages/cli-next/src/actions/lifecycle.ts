@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import type { AtkContext, AtkError, LifecycleOperationResult } from "@microsoft/teamsfx-core";
-import { runOperation, provisionOp, deployOp, publishOp } from "@microsoft/teamsfx-core";
+import type { AtkContext, AtkError, LifecycleOperationResult } from "@microsoft/teamsfx-core-next";
+import { runOperation, provisionOp, deployOp, publishOp } from "@microsoft/teamsfx-core-next";
 
 export interface LifecycleInput {
   projectPath: string;

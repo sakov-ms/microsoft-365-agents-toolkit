@@ -21,7 +21,7 @@ import {
   registerBuiltinDrivers,
   parseProjectYaml,
   executeLifecycle,
-} from "@microsoft/teamsfx-core";
+} from "@microsoft/teamsfx-core-next";
 import { getFeaturesForLifecycle, preferredLanguage } from "../helpers/featureRegistry";
 import { loadTemplateYaml } from "../helpers/templateYamlLoader";
 import { stubExternalDrivers } from "../helpers/driverStubs";

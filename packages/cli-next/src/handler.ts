@@ -4,8 +4,8 @@
 import { Command } from "commander";
 import { cliTelemetry } from "./telemetry";
 import { colorize, TextType } from "./output";
-import { FxError, UserError, registerBuiltinDrivers } from "@microsoft/teamsfx-core";
-import type { AtkContext, PostAction } from "@microsoft/teamsfx-core";
+import { FxError, UserError, registerBuiltinDrivers } from "@microsoft/teamsfx-core-next";
+import type { AtkContext, PostAction } from "@microsoft/teamsfx-core-next";
 import { createCliContext } from "./context";
 
 export type CommandHandler = (opts: Record<string, unknown>, cmd: Command) => Promise<void>;

@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import { Command } from "commander";
-import { signedIn } from "@microsoft/teamsfx-core";
+import { signedIn } from "@microsoft/teamsfx-core-next";
 import { wrapHandler } from "../handler";
 import { M365Login, AzureAccountManager, AzureLoginCI } from "../auth";
 import { checkAzureSPFile } from "../auth/cacheAccess";

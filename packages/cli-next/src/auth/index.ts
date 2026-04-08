@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import type { TokenProvider } from "@microsoft/teamsfx-core";
+import type { TokenProvider } from "@microsoft/teamsfx-core-next";
 import { checkAzureSPFile } from "./cacheAccess";
 import M365Login from "./m365Login";
 import AzureAccountManager from "./azureLogin";

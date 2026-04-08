@@ -11,7 +11,7 @@ import {
   type TemplateDescriptor,
   type TemplateCategory,
   type QuestionSpec,
-} from "@microsoft/teamsfx-core";
+} from "@microsoft/teamsfx-core-next";
 import {
   buildNewCommands,
   mapQuestionToOption,

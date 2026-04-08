@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import type { AtkContext, AtkError } from "@microsoft/teamsfx-core";
-import { runOperation, declarativeAgent } from "@microsoft/teamsfx-core";
+import type { AtkContext, AtkError } from "@microsoft/teamsfx-core-next";
+import { runOperation, declarativeAgent } from "@microsoft/teamsfx-core-next";
 
 export interface AddActionInput {
   projectPath: string;

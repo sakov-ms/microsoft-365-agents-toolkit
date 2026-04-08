@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import * as crypto from "crypto";
-import { createAtkContext, type AtkContext } from "@microsoft/teamsfx-core";
+import { createAtkContext, type AtkContext } from "@microsoft/teamsfx-core-next";
 import { logger } from "./logger";
 import { cliTelemetry } from "./telemetry";
 import { cliUI } from "./ui";

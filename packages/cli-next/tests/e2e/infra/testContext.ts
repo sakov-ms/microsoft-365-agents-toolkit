@@ -11,8 +11,8 @@
  */
 
 import * as crypto from "crypto";
-import { createAtkContext, type AtkContext, LogProvider } from "@microsoft/teamsfx-core";
-import { LogLevel } from "@microsoft/teamsfx-core";
+import { createAtkContext, type AtkContext, LogProvider } from "@microsoft/teamsfx-core-next";
+import { LogLevel } from "@microsoft/teamsfx-core-next";
 import { createTokenProvider } from "../../../src/auth";
 import { TestTracer, TestProgress } from "./tracer";
 

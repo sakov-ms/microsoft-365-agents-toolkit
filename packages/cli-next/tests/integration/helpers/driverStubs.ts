@@ -15,8 +15,8 @@
 
 import * as sinon from "sinon";
 import { ok } from "neverthrow";
-import { driverRegistry } from "@microsoft/teamsfx-core";
-import type { DriverOutput } from "@microsoft/teamsfx-core";
+import { driverRegistry } from "@microsoft/teamsfx-core-next";
+import type { DriverOutput } from "@microsoft/teamsfx-core-next";
 
 /**
  * Default mock outputs per driver ID.

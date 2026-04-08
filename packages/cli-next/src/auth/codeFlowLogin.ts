@@ -14,7 +14,7 @@ import {
   UserError,
   ok,
   err,
-} from "@microsoft/teamsfx-core";
+} from "@microsoft/teamsfx-core-next";
 import { Mutex } from "async-mutex";
 import {
   clearCache,

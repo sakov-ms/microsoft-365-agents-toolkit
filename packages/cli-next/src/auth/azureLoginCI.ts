@@ -16,7 +16,7 @@ import {
   signedIn,
   signedOut,
   UserError,
-} from "@microsoft/teamsfx-core";
+} from "@microsoft/teamsfx-core-next";
 import { saveAzureSP, loadAzureSP, clearAzureSP } from "./cacheAccess";
 import { convertTokenToJson } from "./utils";
 

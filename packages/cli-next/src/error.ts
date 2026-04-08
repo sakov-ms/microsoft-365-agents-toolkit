@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { UserError, SystemError } from "@microsoft/teamsfx-core";
+import { UserError, SystemError } from "@microsoft/teamsfx-core-next";
 
 const source = "CLI";
 

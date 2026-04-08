@@ -6,8 +6,8 @@
 import { expect } from "chai";
 import { describe, it, afterEach, beforeEach } from "mocha";
 import * as sinon from "sinon";
-import type { AtkContext, TemplateDescriptor } from "@microsoft/teamsfx-core";
-import { TemplateRegistry } from "@microsoft/teamsfx-core";
+import type { AtkContext, TemplateDescriptor } from "@microsoft/teamsfx-core-next";
+import { TemplateRegistry } from "@microsoft/teamsfx-core-next";
 import { listTemplatesAction } from "../../src/actions/listTemplates";
 
 function createMockContext(overrides?: Partial<AtkContext>): AtkContext {

@@ -12,7 +12,11 @@
 
 import { expect } from "chai";
 import { describe, it, before } from "mocha";
-import { registerBuiltinDrivers, builtinDrivers, driverRegistry } from "@microsoft/teamsfx-core";
+import {
+  registerBuiltinDrivers,
+  builtinDrivers,
+  driverRegistry,
+} from "@microsoft/teamsfx-core-next";
 import { scanAllTemplateDrivers } from "./helpers/templateYamlLoader";
 
 /**

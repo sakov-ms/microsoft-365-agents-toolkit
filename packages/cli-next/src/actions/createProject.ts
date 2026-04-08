@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import type { AtkContext, AtkError } from "@microsoft/teamsfx-core";
-import { project } from "@microsoft/teamsfx-core";
+import type { AtkContext, AtkError } from "@microsoft/teamsfx-core-next";
+import { project } from "@microsoft/teamsfx-core-next";
 import { colorize, TextType } from "../output";
 
 export interface CreateProjectInput {
@@ -29,7 +29,7 @@ export async function createProjectAction(
   ctx: AtkContext,
   input: CreateProjectInput
 ): Promise<CreateProjectOutput> {
-  const { runOperation } = await import("@microsoft/teamsfx-core");
+  const { runOperation } = await import("@microsoft/teamsfx-core-next");
 
   const result = await runOperation(project.createProjectOp, ctx, {
     templateId: input.templateId,

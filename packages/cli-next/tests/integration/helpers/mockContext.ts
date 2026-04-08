@@ -12,7 +12,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { ok } from "neverthrow";
-import type { AtkContext } from "@microsoft/teamsfx-core";
+import type { AtkContext } from "@microsoft/teamsfx-core-next";
 
 const MOCK_M365_TOKEN = "mock-m365-token-for-testing";
 

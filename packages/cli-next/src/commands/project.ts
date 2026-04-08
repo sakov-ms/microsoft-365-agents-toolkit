@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import { Command } from "commander";
-import { templateRegistry, registerBuiltinTemplates } from "@microsoft/teamsfx-core";
+import { templateRegistry, registerBuiltinTemplates } from "@microsoft/teamsfx-core-next";
 import { wrapHandler, wrapHandlerWithContext, renderPostActions } from "../handler";
 import { buildNewCommands } from "./factory";
 import { provisionAction, deployAction, publishAction } from "../actions/lifecycle";

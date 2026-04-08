@@ -8,7 +8,7 @@ import type {
   TemplateCategory,
   QuestionSpec,
   UserInputQuestion,
-} from "@microsoft/teamsfx-core";
+} from "@microsoft/teamsfx-core-next";
 import { wrapHandlerWithContext } from "../handler";
 import { createProjectAction } from "../actions/createProject";
 

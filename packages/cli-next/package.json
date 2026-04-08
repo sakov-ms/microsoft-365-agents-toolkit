@@ -1,5 +1,5 @@
 {
-  "name": "@microsoft/m365agentstoolkit-cli",
+  "name": "@microsoft/m365agentstoolkit-cli-next",
   "version": "4.0.0",
   "description": "Microsoft 365 Agents Toolkit CLI",
   "author": "Microsoft Corporation",
@@ -45,7 +45,7 @@
     "@azure/msal-node": "^2.16.0",
     "@inquirer/core": "^5.1.2",
     "@inquirer/prompts": "^6.0.0",
-    "@microsoft/teamsfx-core": "workspace:*",
+    "@microsoft/teamsfx-core-next": "workspace:*",
     "applicationinsights": "^1.8.10",
     "async-mutex": "^0.4.1",
     "chalk": "^4.1.0",

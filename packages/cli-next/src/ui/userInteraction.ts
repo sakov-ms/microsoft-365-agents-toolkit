@@ -25,7 +25,7 @@ import {
   ConfirmResult,
   ok,
   Result,
-} from "@microsoft/teamsfx-core";
+} from "@microsoft/teamsfx-core-next";
 
 /**
  * CLI User Interaction adapter.

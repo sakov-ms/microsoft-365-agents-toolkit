@@ -20,7 +20,6 @@ export class AppInsightsTransport {
   init(instrumentationKey: string, commonProperties: Record<string, string>): void {
     if (!instrumentationKey) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const appInsights: AppInsightsModule = require("applicationinsights");
 
     if (appInsights.defaultClient) {

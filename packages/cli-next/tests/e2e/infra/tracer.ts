@@ -10,7 +10,11 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import type { TelemetryReporter, LifecycleProgress, LifecycleName } from "@microsoft/teamsfx-core";
+import type {
+  TelemetryReporter,
+  LifecycleProgress,
+  LifecycleName,
+} from "@microsoft/teamsfx-core-next";
 
 // ---------------------------------------------------------------------------
 // Trace types

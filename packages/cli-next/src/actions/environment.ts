@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { environment, type AtkError } from "@microsoft/teamsfx-core";
+import { environment, type AtkError } from "@microsoft/teamsfx-core-next";
 
 export async function envListAction(projectPath: string): Promise<string[]> {
   const result = await environment.listEnvironments(projectPath);

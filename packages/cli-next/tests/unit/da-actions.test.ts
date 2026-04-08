@@ -9,7 +9,7 @@ import * as sinon from "sinon";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import type { AtkContext } from "@microsoft/teamsfx-core";
+import type { AtkContext } from "@microsoft/teamsfx-core-next";
 
 // Actions under test
 import { addActionAction } from "../../src/actions/addAction";

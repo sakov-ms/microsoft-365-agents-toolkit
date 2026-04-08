@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { LogLevel, LogProvider, Colors } from "@microsoft/teamsfx-core";
+import { LogLevel, LogProvider, Colors } from "@microsoft/teamsfx-core-next";
 import chalk from "chalk";
 import { TextType, colorize } from "./output/colorize";
 

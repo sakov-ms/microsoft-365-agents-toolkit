@@ -30,9 +30,9 @@ import {
   project,
   provisionOp,
   deployOp,
-} from "@microsoft/teamsfx-core";
-import type { TemplateDescriptor } from "@microsoft/teamsfx-core";
-import { readEnvFile } from "@microsoft/teamsfx-core/build/environment/envManager";
+} from "@microsoft/teamsfx-core-next";
+import type { TemplateDescriptor } from "@microsoft/teamsfx-core-next";
+import { readEnvFile } from "@microsoft/teamsfx-core-next/build/environment/envManager";
 import { createTestContext } from "./infra/testContext";
 import { TestCheckpoint } from "./infra/checkpoint";
 import { StepLogger, verifyTelemetry } from "./infra/tracer";

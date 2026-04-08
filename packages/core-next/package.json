@@ -1,5 +1,5 @@
 {
-  "name": "@microsoft/teamsfx-core",
+  "name": "@microsoft/teamsfx-core-next",
   "version": "4.0.0",
   "description": "Microsoft 365 Agents Toolkit Core SDK — v4 redesign with flat operation pipeline, DI via context, and registry-driven templates/drivers.",
   "main": "build/index.js",
