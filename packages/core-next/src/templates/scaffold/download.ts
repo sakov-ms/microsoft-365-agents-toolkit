@@ -77,6 +77,16 @@ export async function unzipWithTransform(
     const outputData = ctx.fileDataReplaceFn ? ctx.fileDataReplaceFn(originalName, data) : data;
 
     const outputPath = path.join(ctx.destination, outputName);
+
+    // Zip Slip guard: ensure resolved path stays within the destination directory
+    const resolvedOutput = path.resolve(outputPath);
+    const resolvedDest = path.resolve(ctx.destination);
+    if (!resolvedOutput.startsWith(resolvedDest + path.sep) && resolvedOutput !== resolvedDest) {
+      throw new Error(
+        `Zip Slip detected: entry "${originalName}" resolves outside destination directory`
+      );
+    }
+
     await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
 
     if (typeof outputData === "string") {

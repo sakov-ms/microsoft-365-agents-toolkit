@@ -27,20 +27,21 @@ export const updateTeamsAppDriver = createDriver({
   name: "Update Teams App",
   inputSchema,
   execute: async (ctx, config) => {
-    if (
-      !(await fs.access(config.appPackagePath).then(
-        () => true,
-        () => false
-      ))
-    ) {
-      return err(
-        userError("AppPackageNotFound", `App package not found: ${config.appPackagePath}`, {
-          source: "teamsApp/update",
-          help: "https://aka.ms/teamsfx-actions/teamsapp-update",
-        })
-      );
+    // Read the app package directly (no separate existence check to avoid TOCTOU race)
+    let archivedFile: Buffer;
+    try {
+      archivedFile = Buffer.from(await fs.readFile(config.appPackagePath));
+    } catch (e: unknown) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+        return err(
+          userError("AppPackageNotFound", `App package not found: ${config.appPackagePath}`, {
+            source: "teamsApp/update",
+            help: "https://aka.ms/teamsfx-actions/teamsapp-update",
+          })
+        );
+      }
+      throw e;
     }
-    const archivedFile = Buffer.from(await fs.readFile(config.appPackagePath));
 
     const zip = new AdmZip(archivedFile);
     const manifestEntry = zip.getEntry("manifest.json");

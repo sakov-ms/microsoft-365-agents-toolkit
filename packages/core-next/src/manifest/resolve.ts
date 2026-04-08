@@ -202,17 +202,6 @@ async function readFunctionFile(
     : path.join(path.dirname(fromPath), filePath);
 
   try {
-    await fs.promises.access(absolutePath);
-  } catch {
-    return err(
-      userError("FileNotFound", `File referenced in manifest function not found: ${filePath}`, {
-        source: SOURCE,
-        help: HELP_LINK,
-      })
-    );
-  }
-
-  try {
     let fileContent = await fs.promises.readFile(absolutePath, "utf8");
     // Strip BOM if present
     if (fileContent.charCodeAt(0) === 0xfeff) {
@@ -223,6 +212,14 @@ async function readFunctionFile(
     // Normalize line endings
     return ok(resolved.replace(/\r\n/g, "\n"));
   } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+      return err(
+        userError("FileNotFound", `File referenced in manifest function not found: ${filePath}`, {
+          source: SOURCE,
+          help: HELP_LINK,
+        })
+      );
+    }
     ctx.logger.error(`Failed to read file "${absolutePath}": ${e}`);
     return err(
       systemError(
