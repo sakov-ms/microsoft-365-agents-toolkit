@@ -4,7 +4,6 @@
 import * as path from "path";
 import * as fs from "fs";
 import { Command } from "commander";
-import { registerBuiltinDrivers } from "@microsoft/teamsfx-core";
 import { buildProgram } from "./commands";
 import { cliTelemetry } from "./telemetry";
 import { logger } from "./logger";
@@ -15,8 +14,6 @@ import { colorize, TextType } from "./output";
  * CLI entry point. Called from cli.js / cliold.js.
  */
 export async function start(): Promise<void> {
-  // Register all built-in lifecycle drivers before any command runs
-  registerBuiltinDrivers();
   const binName = process.env.TEAMSFX_CLI_BIN_NAME ?? "atk";
 
   // Initialise telemetry — reads aiKey from own package.json.

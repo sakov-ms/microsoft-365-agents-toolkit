@@ -33,8 +33,21 @@ Changing `core-next` impacts `cli-next` and future v4 consumers.
 | `packages/vscode-extension` | `ms-teams-vscode-extension` | VS Code extension UI, handlers, tree views |
 | `packages/cli` | `@microsoft/m365agentstoolkit-cli` | CLI tool (`atk` binary) — current v1.x |
 | `packages/core-next` | `@microsoft/teamsfx-core` v4.0.0 | **Next-gen** core engine — merged API contracts, AtkContext, Operation pipeline, TemplateRegistry + **E2E-verified** scaffold system (auto-fallback, per-template filter/prefix-strip, `convertToLangKey()`, bundled fallback ZIPs) + 43 built-in descriptors, question model (buildQuestionTree + traverseQuestionTree + createProjectInteractive), DriverRegistry + createDriver factory + 21 built-in drivers, service clients (TeamsDevPortal, GraphApi, Azure ARM, M365 PackageService), DA module (knowledge/actions/auth/capabilities), lifecycle engine + operations (provisionOp, deployOp, publishOp with composable prerequisites, driver introspection, progress), project creation, environment management, teamsApp operations |
-| `packages/cli-next` | `@microsoft/m365agentstoolkit-cli` v4.0.0 | **Next-gen** CLI — Commander.js-based, registry-driven command factory, action layer wired to core-next operations (createProject, provision, deploy, publish, env, teamsapp validate/package, list templates) |
+| `packages/cli-next` | `@microsoft/m365agentstoolkit-cli` v4.0.0 | **Next-gen** CLI — Commander.js-based, registry-driven command factory, action layer wired to core-next operations (createProject, provision, deploy, publish, env, teamsapp validate/package, list templates). **Bundled with esbuild** (`esbuild.mjs`) for fast startup. |
 | `templates/` | — | Scaffolding templates (TS/JS/Python/C#), built into fx-core |
+
+## Bundlers
+
+| Package | Bundler | Config file | Notes |
+|---------|---------|-------------|-------|
+| `vscode-extension` | **esbuild** | `esbuild.mjs` | Single-file CJS, native MSAL handling |
+| `cli-next` | **esbuild** | `esbuild.mjs` | Single-file CJS, externals: keytar, applicationinsights, msal-node-extensions |
+| `cli` (v1) | webpack | `webpack.config.js` | Legacy — needs 4GB heap |
+| `fx-core` | webpack | `webpack.config.js` | Legacy |
+| `vscode-ui` | webpack | — | Legacy |
+| `mcp-server` | webpack | — | Legacy |
+| `spec-parser` | rollup | `rollup.config.js` | — |
+| `core-next` | none | — | Pure `tsc` (bundled inline by cli-next's esbuild) |
 
 ## Change Placement
 
@@ -320,7 +333,9 @@ npm run watch              # Watch mode (all packages)
 cd packages/core-next && npm run build    # Build core-next
 cd packages/core-next && npm run test:unit        # 492 unit tests
 cd packages/core-next && npm run test:integration # 24 integration tests
-cd packages/cli-next && npm run build     # Build cli-next
+cd packages/cli-next && npm run build     # Build cli-next (tsc only — dev)
+cd packages/cli-next && npm run bundle    # Bundle with esbuild (dev, no minification)
+cd packages/cli-next && npm run package   # Full production build (tsc + esbuild --production)
 cd packages/cli-next && npm run test:unit         # 78 unit tests
 cd packages/cli-next && npm run test:integration  # 62 integration tests
 ```

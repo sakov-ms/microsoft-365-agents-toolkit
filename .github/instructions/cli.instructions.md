@@ -128,19 +128,46 @@ Singleton providers in `src/commonlib/`:
 > E2E: `e2e-test-next.yml` (daily schedule + PR + manual; failure summary via `$GITHUB_STEP_SUMMARY`).
 > **Feature flag:** `TEAMSFX_V4_CORE` (default: off)
 >
-> **Scripts:** `lint`, `format`, `format:check`, `test:unit`, `test:integration`, `build`
+> **Scripts:** `lint`, `format`, `format:check`, `test:unit`, `test:integration`, `build`, `bundle`, `package`
+> **Bundling:** esbuild (`esbuild.mjs`) — single-file CJS bundle for production. See Bundling section below.
 > **ESLint config:** flat config (`eslint.config.mjs`) with `shared` + `header` (no `promise` — too many false positives in CLI stubs).
 
 ## Architecture
 
 ```
 cli.js (entry — sets TEAMSFX_CLI_BIN_NAME)
-  → index.ts
-    → buildProgram() via Commander.js
-      → command groups (project, account, env, teamsapp, add, list, m365, permission, entraApp, regenerate, misc)
-        → wrapHandler(commandName, handler) for telemetry + error handling
-        → wrapHandlerWithContext(name, handler) for handlers needing AtkContext
+  → build/index.js (esbuild bundle)
+    → index.ts start()
+      → buildProgram() via Commander.js
+        → command groups (project, account, env, teamsapp, add, list, m365, permission, entraApp, regenerate, misc)
+          → wrapHandler(commandName, handler) for telemetry + error handling
+          → wrapHandlerWithContext(name, handler) for handlers needing AtkContext
+                                                    ↳ registerBuiltinDrivers() — deferred until a real command runs
 ```
+
+## Bundling (esbuild)
+
+Production builds use esbuild (`esbuild.mjs`) to bundle the CLI into a single CJS file (`build/index.js`).
+This replaces the old `packages/cli` webpack approach (which needed 4GB heap and 100+ lines of config).
+
+| Script | Command | Purpose |
+|--------|---------|---------|
+| `build` | `rimraf build && tsc -p ./` | Dev build — type checking + declarations |
+| `bundle` | `node esbuild.mjs` | Dev bundle — fast, no minification |
+| `package` | `rimraf build && tsc -p ./ && node esbuild.mjs --production` | Prod bundle — minified, source maps |
+| `prepack` | `npm run package` | Auto-runs before `npm pack` / publish |
+
+**Key esbuild settings:**
+- Entry: `src/index.ts` → `build/index.js` (single file)
+- Platform: `node`, target: `node18`, format: `cjs`
+- `keepNames: true` — error class names appear in telemetry, never mangle them
+- Source maps enabled, metafile for bundle analysis (`build/meta.json`)
+- Externals: `keytar`, `@azure/msal-node-extensions` (native .node addons), `applicationinsights` (dynamic requires)
+
+**Lazy-loading patterns** (to minimise `--help` startup time):
+- `applicationinsights` — loaded via `require()` inside `AppInsightsTransport.init()`, not at module level
+- `registerBuiltinDrivers()` — deferred from `start()` to `wrapHandlerWithContext()` (only when a real command runs)
+- `node-machine-id` — loaded via `require()` inside `CliTelemetryReporter.init()`
 
 ### Context Layer (`src/context.ts`)
 
@@ -273,10 +300,13 @@ packages/cli-next/
 ## Telemetry (v4)
 
 Lazy-initialised Application Insights transport — **no-op until `aiKey` is present** in `package.json`.
+The `applicationinsights` module itself is also lazy-loaded (via `require()` inside `init()`) to avoid
+pulling its transitive dependencies at CLI startup.
 
 ```
 start() reads package.json → cliTelemetry.init(aiKey, version)
   → AppInsightsTransport.init(key, commonProperties)
+    → require("applicationinsights") ← lazy, only when aiKey is present
     → appInsights.setup().setAutoCollect*(false).start()
   → every command: wrapHandler() → sendEvent("cmd-start") / sendEvent("cmd-end") / sendErrorEvent("cmd-error")
   → sanitizeProperties() strips tokens, passwords, emails, user file paths
@@ -288,7 +318,7 @@ start() reads package.json → cliTelemetry.init(aiKey, version)
 | File | Purpose |
 |------|---------|
 | `telemetry/index.ts` | `CliTelemetryReporter` — lazy init, shared properties, debug mode via `TEAMSFX_TELEMETRY_TEST` |
-| `telemetry/appInsightsTransport.ts` | `AppInsightsTransport` — App Insights client with all auto-collection disabled, disk retry caching |
+| `telemetry/appInsightsTransport.ts` | `AppInsightsTransport` — lazy-loads `applicationinsights` via `require()` in `init()`, auto-collection disabled, disk retry caching |
 | `telemetry/sanitize.ts` | `anonymizeFilePaths()`, `sanitizeProperties()` — PII redaction before sending |
 | `context.ts` | `telemetryAdapter` bridges `CliTelemetryReporter` → core's `TelemetryReporter` interface |
 | `handler.ts` | `wrapHandler()` — auto-instruments every command with start/end/error events + duration |

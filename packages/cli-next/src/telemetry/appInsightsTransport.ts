@@ -1,14 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import * as appInsights from "applicationinsights";
+// applicationinsights is loaded lazily to avoid pulling its module graph
+// (and its transitive dependencies) at CLI startup.  This shaves ~100ms
+// off cold-start because the package is an esbuild external.
+type AppInsightsModule = typeof import("applicationinsights");
 
 /**
  * Thin wrapper around Application Insights TelemetryClient.
  * All methods are no-ops until `init()` is called with a valid key.
  */
 export class AppInsightsTransport {
-  private client: appInsights.TelemetryClient | undefined;
+  private client: import("applicationinsights").TelemetryClient | undefined;
 
   /**
    * Initialise the App Insights client.  Must be called once before any
@@ -16,6 +19,9 @@ export class AppInsightsTransport {
    */
   init(instrumentationKey: string, commonProperties: Record<string, string>): void {
     if (!instrumentationKey) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const appInsights: AppInsightsModule = require("applicationinsights");
 
     if (appInsights.defaultClient) {
       this.client = new appInsights.TelemetryClient(instrumentationKey);

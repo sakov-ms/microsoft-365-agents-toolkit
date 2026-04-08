@@ -4,7 +4,7 @@
 import { Command } from "commander";
 import { cliTelemetry } from "./telemetry";
 import { colorize, TextType } from "./output";
-import { FxError, UserError } from "@microsoft/teamsfx-core";
+import { FxError, UserError, registerBuiltinDrivers } from "@microsoft/teamsfx-core";
 import type { AtkContext, PostAction } from "@microsoft/teamsfx-core";
 import { createCliContext } from "./context";
 
@@ -88,6 +88,9 @@ export function wrapHandlerWithContext(
   handler: ContextCommandHandler
 ): (...args: unknown[]) => void {
   return wrapHandler(commandName, async (opts, cmd) => {
+    // Lazy-register drivers & templates — only pay the cost when a real
+    // command (not --help) executes.
+    registerBuiltinDrivers();
     const projectPath = (opts.folder as string) ?? (opts.projectFolder as string) ?? process.cwd();
     const ctx = createCliContext(projectPath);
     await handler(ctx, opts, cmd);
