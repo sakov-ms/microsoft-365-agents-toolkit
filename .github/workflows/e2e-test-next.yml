@@ -179,9 +179,7 @@ jobs:
             exit 1
           fi
           npx mocha \
-            --require tests/e2e/setup.ts \
-            --reporter mochawesome \
-            --timeout 1200000 \
+            --config .mocharc.e2e.js \
             "$file"
 
       - name: Get report name
