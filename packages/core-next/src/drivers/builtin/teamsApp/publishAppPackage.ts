@@ -31,20 +31,20 @@ export const publishAppPackageDriver = createDriver({
   name: "Publish App Package",
   inputSchema,
   execute: async (ctx, config) => {
-    // Read the app package
-    if (
-      !(await fs.access(config.appPackagePath).then(
-        () => true,
-        () => false
-      ))
-    ) {
-      return err(
-        userError("AppPackageNotFound", `App package not found: ${config.appPackagePath}`, {
-          source: "teamsApp/publishAppPackage",
-        })
-      );
+    // Read the app package directly (no separate existence check to avoid TOCTOU race)
+    let archivedFile: Buffer;
+    try {
+      archivedFile = Buffer.from(await fs.readFile(config.appPackagePath));
+    } catch (e: unknown) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+        return err(
+          userError("AppPackageNotFound", `App package not found: ${config.appPackagePath}`, {
+            source: "teamsApp/publishAppPackage",
+          })
+        );
+      }
+      throw e;
     }
-    const archivedFile = Buffer.from(await fs.readFile(config.appPackagePath));
 
     // Extract app ID from manifest
     const zip = new AdmZip(archivedFile);

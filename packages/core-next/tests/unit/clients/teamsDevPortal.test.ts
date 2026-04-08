@@ -11,6 +11,9 @@ import * as retryModule from "../../../src/http/retry";
 import { TeamsDevPortalClient } from "../../../src/clients/teamsDevPortal/client";
 import { createMockContext } from "../testHelper";
 
+/** Minimal buffer with valid ZIP local-file-header magic bytes (PK\x03\x04) */
+const FAKE_ZIP = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00]);
+
 describe("TeamsDevPortalClient", () => {
   let sandbox: sinon.SinonSandbox;
   let mockAxios: {
@@ -62,7 +65,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.post.resolves({ data: appDef });
 
       const client = createClient();
-      const result = await client.importApp(Buffer.from("zip-data"), false);
+      const result = await client.importApp(FAKE_ZIP, false);
 
       expect(result.isOk()).to.be.true;
       expect(result._unsafeUnwrap()).to.deep.equal(appDef);
@@ -78,7 +81,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.post.resolves({ data: appDef });
 
       const client = createClient();
-      const result = await client.importApp(Buffer.from("zip-data"), true);
+      const result = await client.importApp(FAKE_ZIP, true);
 
       expect(result.isOk()).to.be.true;
       const [, , opts] = mockAxios.post.firstCall.args;
@@ -89,7 +92,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.post.resolves({ data: null });
 
       const client = createClient();
-      const result = await client.importApp(Buffer.from("zip-data"));
+      const result = await client.importApp(FAKE_ZIP);
 
       expect(result.isErr()).to.be.true;
       expect(result._unsafeUnwrapErr().code).to.equal("TeamsDevPortalImportError");
@@ -102,7 +105,7 @@ describe("TeamsDevPortalClient", () => {
       });
 
       const client = createClient();
-      const result = await client.importApp(Buffer.from("zip-data"));
+      const result = await client.importApp(FAKE_ZIP);
 
       expect(result.isErr()).to.be.true;
       expect(result._unsafeUnwrapErr().code).to.equal("TeamsAppConflictError");
@@ -116,7 +119,7 @@ describe("TeamsDevPortalClient", () => {
       });
 
       const client = createClient();
-      const result = await client.importApp(Buffer.from("zip-data"));
+      const result = await client.importApp(FAKE_ZIP);
 
       expect(result.isErr()).to.be.true;
       expect(result._unsafeUnwrapErr().kind).to.equal("system");
@@ -165,7 +168,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.post.resolves({ data: { id: "published-1" } });
 
       const client = createClient();
-      const result = await client.publishTeamsApp("app-1", Buffer.from("zip"));
+      const result = await client.publishTeamsApp("app-1", FAKE_ZIP);
 
       expect(result.isOk()).to.be.true;
       expect(result._unsafeUnwrap()).to.equal("published-1");
@@ -176,7 +179,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.post.resolves({ data: { error: { code: "SomeError", message: "fail" } } });
 
       const client = createClient();
-      const result = await client.publishTeamsApp("app-1", Buffer.from("zip"));
+      const result = await client.publishTeamsApp("app-1", FAKE_ZIP);
 
       expect(result.isErr()).to.be.true;
       expect(result._unsafeUnwrapErr().code).to.equal("TeamsAppPublishError");
@@ -208,7 +211,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.post.onSecondCall().resolves({ data: { teamsAppId: "updated-1" } });
 
       const client = createClient();
-      const result = await client.publishTeamsApp("app-1", Buffer.from("zip"));
+      const result = await client.publishTeamsApp("app-1", FAKE_ZIP);
 
       expect(result.isOk()).to.be.true;
       expect(result._unsafeUnwrap()).to.equal("updated-1");
@@ -282,7 +285,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.post.resolves({ data: { teamsAppId: "updated-1" } });
 
       const client = createClient();
-      const result = await client.publishTeamsAppUpdate("app-1", Buffer.from("zip"));
+      const result = await client.publishTeamsAppUpdate("app-1", FAKE_ZIP);
 
       expect(result.isOk()).to.be.true;
       expect(result._unsafeUnwrap()).to.equal("updated-1");
@@ -295,7 +298,7 @@ describe("TeamsDevPortalClient", () => {
       mockAxios.get.resolves({ data: { value: [] } });
 
       const client = createClient();
-      const result = await client.publishTeamsAppUpdate("app-1", Buffer.from("zip"));
+      const result = await client.publishTeamsAppUpdate("app-1", FAKE_ZIP);
 
       expect(result.isErr()).to.be.true;
       expect(result._unsafeUnwrapErr().code).to.equal("TeamsAppNotPublished");

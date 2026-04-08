@@ -109,38 +109,38 @@ export class CryptoCachePlugin {
   async beforeCacheAccess(cacheContext: TokenCacheContext): Promise<void> {
     ensureCacheDir();
     const filePath = this.getCachePath();
-    if (fs.existsSync(filePath)) {
-      try {
-        const text = fs.readFileSync(filePath, UTF8);
-        if (text && text.length > 0) {
-          try {
-            const data = await this.crypto.decrypt(text);
-            JSON.parse(data); // validate JSON
-            cacheContext.tokenCache.deserialize(data);
-          } catch {
-            // Try reading as unencrypted legacy cache
-            try {
-              const parsed = JSON.parse(text);
-              if (parsed.Account) {
-                cacheContext.tokenCache.deserialize(text);
-              } else {
-                fs.writeFileSync(filePath, "", UTF8);
-              }
-            } catch {
-              fs.writeFileSync(filePath, "", UTF8);
-            }
-          }
-        }
-      } catch {
-        // Swallow cache read errors
-      }
-    } else {
+    let text: string | undefined;
+    try {
+      text = fs.readFileSync(filePath, UTF8);
+    } catch {
+      // File does not exist or is unreadable — write initial cache
       try {
         const data = cacheContext.tokenCache.serialize();
-        const text = await this.crypto.encrypt(data);
-        fs.writeFileSync(filePath, text, UTF8);
+        const encrypted = await this.crypto.encrypt(data);
+        fs.writeFileSync(filePath, encrypted, UTF8);
       } catch {
         // Swallow cache write errors
+      }
+      return;
+    }
+
+    if (!text || text.length === 0) return;
+
+    try {
+      const data = await this.crypto.decrypt(text);
+      JSON.parse(data); // validate JSON
+      cacheContext.tokenCache.deserialize(data);
+    } catch {
+      // Try reading as unencrypted legacy cache
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed.Account) {
+          cacheContext.tokenCache.deserialize(text);
+        } else {
+          fs.writeFileSync(filePath, "", UTF8);
+        }
+      } catch {
+        fs.writeFileSync(filePath, "", UTF8);
       }
     }
   }

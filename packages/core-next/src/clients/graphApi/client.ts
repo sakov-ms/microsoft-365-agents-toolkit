@@ -93,6 +93,7 @@ export class GraphApiClient {
   ): Promise<Result<void, AtkError>> {
     try {
       await sendWithRetry(
+        // lgtm[js/file-access-to-http] updates is a programmatic object, not raw file data
         () => this.axios.patch(`/applications/${objectId}`, updates),
         5 // extra retries for 404/400 race conditions during permission sync
       );

@@ -80,16 +80,7 @@ export async function zipDeployExecute(
     ? config.artifactFolder
     : path.join(workDir, config.artifactFolder);
 
-  // Verify dist folder exists
-  try {
-    await fs.access(distDir);
-  } catch {
-    return err(
-      userError("ArtifactFolderNotFound", `Artifact folder '${distDir}' does not exist`, { source })
-    );
-  }
-
-  // Create ZIP
+  // Create ZIP (readdir inside createZip will fail with ENOENT if distDir is missing)
   ctx.logger.info(`[${source}] Creating ZIP from ${distDir}`);
   const zipPath = config.outputZipFile
     ? path.isAbsolute(config.outputZipFile)
@@ -132,6 +123,16 @@ export async function zipDeployExecute(
   // Upload ZIP
   ctx.logger.info(`[${source}] Uploading ZIP to ${scmEndpoint}`);
   const zipBuffer = await fs.readFile(zipPath);
+
+  // Validate ZIP magic bytes before uploading
+  const ZIP_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+  if (zipBuffer.length < 4 || zipBuffer.subarray(0, 4).compare(ZIP_MAGIC) !== 0) {
+    return err(
+      systemError("InvalidZipPackage", `ZIP file at '${zipPath}' is not a valid ZIP archive`, {
+        source,
+      })
+    );
+  }
 
   const uploadResult = await uploadZipWithRetry(
     scmEndpoint,
@@ -217,6 +218,13 @@ async function createZip(
     zip.writeZip(zipPath);
     return ok(undefined);
   } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+      return err(
+        userError("ArtifactFolderNotFound", `Artifact folder '${sourceDir}' does not exist`, {
+          source: "zipDeploy",
+        })
+      );
+    }
     return err(
       systemError(
         "ZipCreationError",

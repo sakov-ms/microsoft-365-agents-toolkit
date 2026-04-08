@@ -33,21 +33,21 @@ export const configureTeamsAppDriver = createDriver({
   name: "Configure Teams App",
   inputSchema,
   execute: async (ctx, config) => {
-    // Read the app package
-    if (
-      !(await fs.access(config.appPackagePath).then(
-        () => true,
-        () => false
-      ))
-    ) {
-      return err(
-        userError("AppPackageNotFound", `App package not found: ${config.appPackagePath}`, {
-          source: "teamsApp/configure",
-          help: "https://aka.ms/teamsfx-actions/teamsapp-update",
-        })
-      );
+    // Read the app package directly (no separate existence check to avoid TOCTOU race)
+    let archivedFile: Buffer;
+    try {
+      archivedFile = Buffer.from(await fs.readFile(config.appPackagePath));
+    } catch (e: unknown) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+        return err(
+          userError("AppPackageNotFound", `App package not found: ${config.appPackagePath}`, {
+            source: "teamsApp/configure",
+            help: "https://aka.ms/teamsfx-actions/teamsapp-update",
+          })
+        );
+      }
+      throw e;
     }
-    const archivedFile = Buffer.from(await fs.readFile(config.appPackagePath));
 
     // Extract manifest to read teamsAppId
     const zip = new AdmZip(archivedFile);

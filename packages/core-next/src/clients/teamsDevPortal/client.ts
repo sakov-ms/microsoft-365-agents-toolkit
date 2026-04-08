@@ -26,6 +26,9 @@ import { BotRegistration } from "../graphApi/types";
 export class TeamsDevPortalClient {
   private readonly axios: AxiosInstance;
 
+  /** ZIP local-file-header magic bytes: PK\\x03\\x04 */
+  private static readonly ZIP_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+
   constructor(ctx: AtkContext, token: string) {
     this.axios = createHttpClient(ctx, { baseURL: TDP_BASE_URL });
     this.axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -39,6 +42,8 @@ export class TeamsDevPortalClient {
    * @param overwrite - If true, update an existing app with the same ID
    */
   async importApp(file: Buffer, overwrite = false): Promise<Result<AppDefinition, AtkError>> {
+    const magicErr = this.validateZipBuffer(file, "importApp");
+    if (magicErr) return err(magicErr);
     try {
       const response = await sendWithRetry(() =>
         this.axios.post("/api/appdefinitions/v2/import", file, {
@@ -94,6 +99,8 @@ export class TeamsDevPortalClient {
    * Returns the published app ID.
    */
   async publishTeamsApp(teamsAppId: string, file: Buffer): Promise<Result<string, AtkError>> {
+    const magicErr = this.validateZipBuffer(file, "publishTeamsApp");
+    if (magicErr) return err(magicErr);
     try {
       const response = await sendWithRetry(() =>
         this.axios.post("/api/publishing", file, {
@@ -136,6 +143,8 @@ export class TeamsDevPortalClient {
    * Returns the updated published app ID.
    */
   async publishTeamsAppUpdate(teamsAppId: string, file: Buffer): Promise<Result<string, AtkError>> {
+    const magicErr = this.validateZipBuffer(file, "publishTeamsAppUpdate");
+    if (magicErr) return err(magicErr);
     try {
       const stagedRes = await this.getStagedApp(teamsAppId);
       if (stagedRes.isErr()) return err(stagedRes.error);
@@ -342,6 +351,21 @@ export class TeamsDevPortalClient {
     } catch (e: unknown) {
       return err(this.wrapAxiosError("createApiKeyRegistration", e));
     }
+  }
+
+  /**
+   * Validate that a buffer has the ZIP local-file-header magic bytes.
+   * Returns an AtkError if invalid, or undefined if OK.
+   */
+  private validateZipBuffer(file: Buffer, caller: string): AtkError | undefined {
+    if (file.length < 4 || file.subarray(0, 4).compare(TeamsDevPortalClient.ZIP_MAGIC) !== 0) {
+      return userError(
+        "InvalidAppPackage",
+        `${caller}: Buffer is not a valid ZIP file (missing PK magic header)`,
+        { source: "TeamsDevPortalClient" }
+      );
+    }
+    return undefined;
   }
 
   /**
