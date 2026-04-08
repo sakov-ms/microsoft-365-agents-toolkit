@@ -57,6 +57,7 @@ cd packages/cli-next && npm run test:unit
 - Framework: Mocha + Chai + Sinon, ts-node/register via `.mocharc.js`
 - Coverage: NYC (reports inline after test run)
 - Pattern: `tests/unit/**/*.tests.ts`
+- E2e uses separate `.mocharc.e2e.js` (chains `ts-node/register` + `tests/e2e/setup.ts`)
 
 ### 2. Integration Tests (no credentials needed)
 

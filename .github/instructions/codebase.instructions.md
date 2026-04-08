@@ -295,6 +295,36 @@ Integration tests verify cross-module interactions without external services:
 - Use `validator` library for URL/string validation; no hand-rolled regex for security checks
 - Prefer `fs-extra` over raw `fs` for atomic file operations
 
+### Filesystem Access — EAFP Pattern
+
+Use **EAFP (Easier to Ask for Forgiveness than Permission)** for filesystem operations.
+Do NOT check existence before operating — this causes TOCTOU race conditions (CodeQL `js/toctou-race-condition`).
+
+```typescript
+// BAD — TOCTOU race condition
+if (await fs.access(filePath).then(() => true).catch(() => false)) {
+  const data = await fs.readFile(filePath, "utf-8");
+}
+
+// GOOD — EAFP
+try {
+  const data = await fs.readFile(filePath, "utf-8");
+} catch (e: any) {
+  if (e.code === "ENOENT") {
+    // Handle missing file
+  } else {
+    throw e;
+  }
+}
+```
+
+### Archive Security
+
+- **Zip Slip**: When extracting archives, validate each entry name with `indexOf("..")` on the
+  raw name AND check `path.resolve()` stays within the target directory.
+- **ZIP validation**: Before uploading ZIP files to services, verify the magic bytes `PK\x03\x04`
+  (`Buffer.from([0x50, 0x4b, 0x03, 0x04])`).
+
 ## Telemetry
 
 - Every public API entry point should emit start/end telemetry events

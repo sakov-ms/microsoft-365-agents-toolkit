@@ -74,7 +74,7 @@ export async function zipDeployExecute(
 
   // Resolve paths
   const workDir = path.isAbsolute(config.workingDirectory ?? ".")
-    ? (config.workingDirectory ?? ".")
+    ? config.workingDirectory ?? "."
     : path.join(ctx.projectPath, config.workingDirectory ?? ".");
   const distDir = path.isAbsolute(config.artifactFolder)
     ? config.artifactFolder

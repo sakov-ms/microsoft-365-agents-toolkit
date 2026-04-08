@@ -61,6 +61,10 @@ Encapsulate external service interactions in `src/component/driver/`:
 - Drivers return `Result<T, FxError>` — never throw
 - Use `getLocalizedString()` for all user-facing messages
 - Log with the shared `LogProvider` from context, not `console`
+- **Filesystem EAFP**: Use try/catch on file ops, catch `ENOENT` — never `existsSync()` before
+  `readFile()` (TOCTOU). See `codebase.instructions.md` > Security > EAFP Pattern.
+- **Archive security**: ZIP extraction must guard against Zip Slip (`download.ts`); ZIP uploads
+  must validate magic bytes (`teamsDevPortal/client.ts`, `zipDeploy.ts`).
 
 ## Question Model
 
