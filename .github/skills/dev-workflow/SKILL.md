@@ -134,7 +134,9 @@ Key env vars set during debug: `NODE_ENV=development`, `TEMPLATE_VERSION=local`
 
 ### Phase 5 — Lint & Format
 
-For core-next and cli-next, `build` auto-runs lint fix + format via `postbuild` hook.
+> **For core-next and cli-next packages**, see the **`lint-format` skill** for the full pipeline, gotchas, and architecture.
+
+For core-next and cli-next, `build` auto-runs `eslint --fix` via `postbuild` hook (formatting included via `eslint-plugin-prettier`).
 For other packages, run manually:
 
 ```bash

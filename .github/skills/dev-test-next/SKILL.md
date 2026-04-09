@@ -39,8 +39,9 @@ pnpm --filter ./packages/cli-next build
 cd packages/cli-next && pnpm link --global    # makes `atk` command available
 ```
 
-> **Note:** `build` includes a `postbuild` hook that automatically runs `eslint --fix` and
-> `prettier --write` on `src/` and `tests/`. No separate format step needed after building.
+> **Note:** `build` includes a `postbuild` hook that automatically runs `eslint --fix`
+> on `src/` and `tests/`. Formatting is handled by `eslint-plugin-prettier` (single source
+> of truth). No separate format step needed after building.
 
 ## Test Pyramid
 
@@ -56,8 +57,8 @@ cd packages/cli-next && npm run test:unit
 
 - Framework: Mocha + Chai + Sinon, ts-node/register via `.mocharc.js`
 - Coverage: NYC (reports inline after test run)
-- Pattern: `tests/unit/**/*.tests.ts`
-- E2e uses separate `.mocharc.e2e.js` (chains `ts-node/register` + `tests/e2e/setup.ts`)
+- Pattern: `tests/unit/**/*.test.ts`
+- E2E uses separate `.mocharc.e2e.js` (chains `ts-node/register` + `tests/e2e/setup.ts`)
 
 ### 2. Integration Tests (no credentials needed)
 
@@ -65,7 +66,7 @@ cd packages/cli-next && npm run test:unit
 cd packages/cli-next && npm run test:integration
 ```
 
-- Pattern: `tests/integration/**/*.tests.ts`
+- Pattern: `tests/integration/**/*.test.ts`
 - Tests cross-module wiring without Azure or M365 services
 
 ### 3. E2E Tests
@@ -74,9 +75,12 @@ Two test suites with different credential requirements:
 
 | Suite | Command | Credentials | What it tests |
 |-------|---------|-------------|---------------|
-| **CLI syntax** | `npm run test:e2e:cli` | None (just needs `atk` on PATH) | Binary arg parsing, `--version`, `--help`, scaffold |
+| **CLI syntax** | `npm run test:e2e:cli` | None (just needs `atk` on PATH) | Binary arg parsing, `--version`, `--help`, scaffold smoke tests (bot, tab, DA, ME) |
+| **MCP scaffold** | via `npm run test:e2e` | None | `atk new da mcp-remote` scaffold, MCP server URL, file validation, error cases |
+| **Auth commands** | via `npm run test:e2e` | None | `atk auth` subcommand help parsing (show, login azure/m365, logout) |
+| **Add capability** | via `npm run test:e2e` | None | `atk add capability` on DA project (web-search), error cases |
 | **Lifecycle** | `npm run test:e2e:lifecycle` | Azure + M365 login | Full scaffold → provision → deploy → validate per template |
-| **All E2E** | `npm run test:e2e` | Azure + M365 login | Both suites |
+| **All E2E** | `npm run test:e2e` | Azure + M365 login | All 5 test files |
 | **Cleanup** | `npm run test:e2e:clean` | Azure login | Deletes stale Azure resource groups |
 
 Test files: `packages/cli-next/tests/e2e/`
@@ -88,7 +92,7 @@ Test files: `packages/cli-next/tests/e2e/`
 ```bash
 cd packages/cli-next
 pnpm link --global          # register `atk` command
-npm run test:e2e:cli        # runs cli-syntax.tests.ts
+npm run test:e2e:cli        # runs cli-syntax.test.ts
 ```
 
 ### Lifecycle Tests (credentials required)
@@ -123,15 +127,15 @@ Use Mocha `--grep` to filter by template ID (tests are named `E2E lifecycle: <id
 ```bash
 # Single template
 npx mocha --require tests/e2e/setup.ts --timeout 1200000 \
-  --grep "bot/echo.*TypeScript" "tests/e2e/lifecycle.tests.ts"
+  --grep "bot/echo.*TypeScript" "tests/e2e/lifecycle.test.ts"
 
 # All bot templates
 npx mocha --require tests/e2e/setup.ts --timeout 1200000 \
-  --grep "bot/" "tests/e2e/lifecycle.tests.ts"
+  --grep "bot/" "tests/e2e/lifecycle.test.ts"
 
 # All TypeScript templates
 npx mocha --require tests/e2e/setup.ts --timeout 1200000 \
-  --grep "TypeScript" "tests/e2e/lifecycle.tests.ts"
+  --grep "TypeScript" "tests/e2e/lifecycle.test.ts"
 ```
 
 ### Cleanup Stale Resources
@@ -147,7 +151,7 @@ Resources are tagged with `atk-test=true` and `created-at` timestamp for reliabl
 
 | Workflow | File | Trigger | What it runs |
 |----------|------|---------|--------------|
-| **CI Next** | `.github/workflows/ci-next.yml` | PR/push to `dev`/`release/**` | Build → Lint → Format → Unit tests → Integration tests |
+| **CI Next** | `.github/workflows/ci-next.yml` | PR/push to `dev`/`release/**` | Build → Lint → Unit tests → Integration tests |
 | **E2E Test Next** | `.github/workflows/e2e-test-next.yml` | PR/push, nightly, manual | Matrix of E2E test files with Azure creds |
 
 ### CI Next Verification
@@ -161,8 +165,6 @@ pnpm --filter ./packages/core-next build
 pnpm --filter ./packages/cli-next build
 pnpm --filter ./packages/core-next lint
 pnpm --filter ./packages/cli-next lint
-pnpm --filter ./packages/core-next format:check
-pnpm --filter ./packages/cli-next format:check
 pnpm --filter ./packages/core-next test:unit
 pnpm --filter ./packages/cli-next test:unit
 pnpm --filter ./packages/cli-next test:integration
@@ -187,16 +189,15 @@ Before pushing a change to core-next or cli-next, verify:
    (auto-runs lint fix + format via `postbuild` hook)
 2. **Lint check** — `pnpm --filter ./packages/core-next lint && pnpm --filter ./packages/cli-next lint`
    (should show 0 errors; warnings are acceptable)
-3. **Format check** — `pnpm --filter ./packages/core-next format:check && pnpm --filter ./packages/cli-next format:check`
-4. **Unit tests** — `pnpm --filter ./packages/core-next test:unit && pnpm --filter ./packages/cli-next test:unit`
-5. **Integration tests** — `pnpm --filter ./packages/cli-next test:integration`
-6. **(Optional) E2E CLI** — `cd packages/cli-next && npm run test:e2e:cli`
-7. **(Optional) E2E Lifecycle** — `cd packages/cli-next && npm run test:e2e:lifecycle` (after `atk auth login`)
+3. **Unit tests** — `pnpm --filter ./packages/core-next test:unit && pnpm --filter ./packages/cli-next test:unit`
+4. **Integration tests** — `pnpm --filter ./packages/cli-next test:integration`
+5. **(Optional) E2E CLI** — `cd packages/cli-next && npm run test:e2e:cli`
+6. **(Optional) E2E Lifecycle** — `cd packages/cli-next && npm run test:e2e:lifecycle` (after `atk auth login`)
 
-Steps 1–5 match what CI Next runs. Steps 6–7 match what E2E Test Next runs.
+Steps 1–4 match what CI Next runs. Steps 5–6 match what E2E Test Next runs.
 
-> **Shortcut:** Since `build` now auto-formats, steps 1–3 can be collapsed into just
-> `build` + `lint`. Only run `format:check` separately if you skipped the build.
+> **Shortcut:** Since `build` now auto-formats via eslint-plugin-prettier, steps 1–2 can
+> be collapsed into just `build` + `lint`. No separate format-check needed.
 
 ## E2E Architecture
 
