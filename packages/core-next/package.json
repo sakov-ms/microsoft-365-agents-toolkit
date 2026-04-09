@@ -17,6 +17,7 @@
     "templates/**/*"
   ],
   "scripts": {
+    "precommit": "lint-staged",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
     "build": "tsc -p ./ --incremental",
     "postbuild": "eslint --fix \"src/**/*.ts\" \"tests/**/*.ts\" && prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -52,11 +53,19 @@
     "@types/sinon": "^17.0.0",
     "chai": "4.3.4",
     "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.1.0",
+    "eslint-plugin-prettier": "^5.5.0",
+    "lint-staged": "^10.5.4",
     "mocha": "^11.0.0",
     "nyc": "^17.1.0",
     "prettier": "^3.3.0",
     "sinon": "^19.0.0",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.2"
+  },
+  "lint-staged": {
+    "*.{js,jsx,css,ts,tsx}": [
+      "npx eslint --cache --fix --quiet"
+    ]
   }
 }
