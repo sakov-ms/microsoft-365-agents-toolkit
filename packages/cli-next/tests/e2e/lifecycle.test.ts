@@ -27,12 +27,16 @@ import { describe, it, afterEach } from "mocha";
 import { v4 as uuidv4 } from "uuid";
 import {
   templateRegistry,
+  registerBuiltinTemplates,
   runOperation,
   project,
   provisionOp,
   deployOp,
 } from "@microsoft/teamsfx-core-next";
 import type { TemplateDescriptor } from "@microsoft/teamsfx-core-next";
+
+// Populate the registry — templates don't self-register at import time
+registerBuiltinTemplates();
 import { readEnvFile } from "@microsoft/teamsfx-core-next/build/environment/envManager";
 import { createTestContext } from "./infra/testContext";
 import { TestCheckpoint } from "./infra/checkpoint";
@@ -78,6 +82,13 @@ function getValidationTags(template: TemplateDescriptor): string[] {
 // ---------------------------------------------------------------------------
 
 const templates = templateRegistry.list().filter((t) => t.testable !== false);
+
+if (templates.length === 0) {
+  throw new Error(
+    "templateRegistry is empty — registerBuiltinTemplates() may have failed. " +
+      "Cannot generate lifecycle tests with 0 templates."
+  );
+}
 
 for (const template of templates) {
   for (const lang of template.languages) {
