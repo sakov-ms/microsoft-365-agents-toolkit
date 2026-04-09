@@ -44,17 +44,18 @@ async function run(
       env: { ...process.env, CI_ENABLED: "true" },
     });
     return { stdout, stderr, exitCode: 0 };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as { stdout?: string; stderr?: string; code?: number };
     return {
-      stdout: e.stdout ?? "",
-      stderr: e.stderr ?? "",
-      exitCode: e.code ?? 1,
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? "",
+      exitCode: err.code ?? 1,
     };
   }
 }
 
-function readJson(filePath: string): any {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+function readJson(filePath: string): Record<string, unknown> {
+  return JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, unknown>;
 }
 
 async function scaffoldDA(dir: string, name: string): Promise<string> {
@@ -110,8 +111,9 @@ describe("Add capability tests", function () {
       expect(fs.existsSync(daManifestPath), "declarativeAgent.json should exist").to.be.true;
       const daManifest = readJson(daManifestPath);
       expect(daManifest.capabilities).to.be.an("array");
-      const webSearchCap = daManifest.capabilities.find(
-        (c: any) => c.name === "WebSearch" || c.name === "web_search"
+      const capabilities = daManifest.capabilities as Record<string, unknown>[];
+      const webSearchCap = capabilities.find(
+        (c) => c.name === "WebSearch" || c.name === "web_search"
       );
       expect(webSearchCap, "should have web_search capability").to.not.be.undefined;
     });

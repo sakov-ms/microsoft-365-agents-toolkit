@@ -45,11 +45,12 @@ async function run(
       env: { ...process.env, CI_ENABLED: "true" },
     });
     return { stdout, stderr, exitCode: 0 };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as { stdout?: string; stderr?: string; code?: number };
     return {
-      stdout: e.stdout ?? "",
-      stderr: e.stderr ?? "",
-      exitCode: e.code ?? 1,
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? "",
+      exitCode: err.code ?? 1,
     };
   }
 }

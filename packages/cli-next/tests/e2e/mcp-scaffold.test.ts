@@ -43,17 +43,18 @@ async function run(
       env: { ...process.env, CI_ENABLED: "true" },
     });
     return { stdout, stderr, exitCode: 0 };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as { stdout?: string; stderr?: string; code?: number };
     return {
-      stdout: e.stdout ?? "",
-      stderr: e.stderr ?? "",
-      exitCode: e.code ?? 1,
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? "",
+      exitCode: err.code ?? 1,
     };
   }
 }
 
-function readJson(filePath: string): any {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+function readJson(filePath: string): Record<string, unknown> {
+  return JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, unknown>;
 }
 
 describe("MCP scaffold integration", function () {
@@ -93,13 +94,17 @@ describe("MCP scaffold integration", function () {
 
       // Verify declarativeAgent.json references ai-plugin as action
       const daManifest = readJson(path.join(appPackage, "declarativeAgent.json"));
-      expect(daManifest.actions).to.be.an("array").that.is.not.empty;
-      expect(daManifest.actions[0].file).to.equal("ai-plugin.json");
+      const actions = daManifest.actions as { file: string }[];
+      expect(actions).to.be.an("array").that.is.not.empty;
+      expect(actions[0].file).to.equal("ai-plugin.json");
 
       // Verify .vscode/mcp.json has the remote URL
       const mcpConfig = readJson(path.join(projectPath, ".vscode", "mcp.json"));
       expect(mcpConfig.servers).to.be.an("object");
-      const serverEntry = Object.values(mcpConfig.servers)[0] as any;
+      const serverEntry = Object.values(mcpConfig.servers as Record<string, unknown>)[0] as Record<
+        string,
+        unknown
+      >;
       expect(serverEntry.url).to.equal(MCP_SERVER_URL);
       expect(serverEntry.type).to.equal("http");
     });
@@ -116,7 +121,9 @@ describe("MCP scaffold integration", function () {
         const mcpConfigPath = path.join(projectPath, ".vscode", "mcp.json");
         if (fs.existsSync(mcpConfigPath)) {
           const mcpConfig = readJson(mcpConfigPath);
-          const serverEntry = Object.values(mcpConfig.servers)[0] as any;
+          const serverEntry = Object.values(
+            mcpConfig.servers as Record<string, unknown>
+          )[0] as Record<string, unknown>;
           expect(serverEntry.url).to.satisfy(
             (url: string) => !url || url === "" || url.includes("{{"),
             "URL should be empty or a placeholder"
