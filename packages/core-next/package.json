@@ -65,7 +65,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,css,ts,tsx}": [
-      "npx eslint --cache --fix --quiet"
+      "npx eslint --fix --quiet"
     ]
   }
 }
