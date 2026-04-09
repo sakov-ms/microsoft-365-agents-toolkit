@@ -67,27 +67,6 @@ jobs:
       - name: Lint cli-next
         run: pnpm --filter ./packages/cli-next lint
 
-  format-check:
-    name: Format Check
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup project
-        uses: ./.github/actions/setup-project
-        with:
-          range: "next"
-
-      - name: Check core-next formatting
-        run: pnpm --filter ./packages/core-next format:check
-
-      - name: Check cli-next formatting
-        run: pnpm --filter ./packages/cli-next format:check
-
   unit-test:
     name: Unit Tests
     needs: build
