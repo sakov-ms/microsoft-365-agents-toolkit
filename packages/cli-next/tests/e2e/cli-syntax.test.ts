@@ -105,6 +105,36 @@ describe("CLI syntax verification", function () {
       const projectPath = path.join(dir, "TestDA");
       expect(fs.existsSync(projectPath), `project dir should exist`).to.be.true;
     });
+
+    it("atk new tab dashboard --name TestDash --non-interactive", async function () {
+      const result = await run(
+        `${ATK_BIN} new tab dashboard --name TestDash --folder ${dir} --non-interactive`,
+        dir
+      );
+      expect(result.exitCode, `stderr: ${result.stderr}`).to.equal(0);
+      const projectPath = path.join(dir, "TestDash");
+      expect(fs.existsSync(projectPath), `project dir should exist`).to.be.true;
+    });
+
+    it("atk new bot notification-express --name TestNotif --non-interactive", async function () {
+      const result = await run(
+        `${ATK_BIN} new bot notification-express --name TestNotif --folder ${dir} --non-interactive`,
+        dir
+      );
+      expect(result.exitCode, `stderr: ${result.stderr}`).to.equal(0);
+      const projectPath = path.join(dir, "TestNotif");
+      expect(fs.existsSync(projectPath), `project dir should exist`).to.be.true;
+    });
+
+    it("atk new me search-based --name TestME --non-interactive", async function () {
+      const result = await run(
+        `${ATK_BIN} new me search-based --name TestME --folder ${dir} --non-interactive`,
+        dir
+      );
+      expect(result.exitCode, `stderr: ${result.stderr}`).to.equal(0);
+      const projectPath = path.join(dir, "TestME");
+      expect(fs.existsSync(projectPath), `project dir should exist`).to.be.true;
+    });
   });
 
   describe("Add / Set / M365 command --help", function () {
