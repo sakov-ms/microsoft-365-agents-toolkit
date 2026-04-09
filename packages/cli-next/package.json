@@ -23,9 +23,9 @@
   "preferGlobal": true,
   "scripts": {
     "precommit": "lint-staged",
-    "build": "rimraf build && tsc -p ./",
+    "build": "rimraf build tsconfig.tsbuildinfo && tsc -p ./",
     "bundle": "node esbuild.mjs",
-    "package": "rimraf build && tsc -p ./ && node esbuild.mjs --production",
+    "package": "rimraf build tsconfig.tsbuildinfo && tsc -p ./ && node esbuild.mjs --production",
     "prepack": "npm run package",
     "postbuild": "eslint --fix \"src/**/*.ts\" \"tests/**/*.ts\"",
     "watch": "tsc -w -p ./",

@@ -163,7 +163,10 @@ jobs:
       - name: Link CLI from workspace
         if: ${{ github.event.inputs.cli-source != 'registry' }}
         working-directory: packages/cli-next
-        run: pnpm link --global
+        run: |
+          pnpm link --global
+          chmod +x cli.js
+          echo "ATK_BIN=$(pwd)/cli.js" >> $GITHUB_ENV
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
