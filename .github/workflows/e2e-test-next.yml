@@ -87,16 +87,35 @@ jobs:
 
       - name: List test cases
         id: list-cases
-        working-directory: packages/cli-next/tests/e2e
+        working-directory: packages/cli-next
         run: |
           inputCases='${{ github.event.inputs.cases }}'
-          if [ -z "$inputCases" ]; then
-            cases=$(find . -name "*.test.ts" -printf "%f\n" | jq -Rsc '[split("\n")[] | select(. != "")]')
-          else
-            cases="$inputCases"
+          if [ -n "$inputCases" ]; then
+            echo "cases=$inputCases" >> $GITHUB_OUTPUT
+            echo "Using provided cases: $inputCases"
+            exit 0
           fi
+
+          # Collect non-lifecycle test files
+          nonLifecycle=$(find tests/e2e -name "*.test.ts" ! -name "lifecycle.test.ts" -printf "%f\n" \
+            | jq -Rsc '[split("\n")[] | select(. != "")]')
+
+          # Expand lifecycle.test.ts into per-template matrix entries
+          # Each entry is "lifecycle.test.ts::templateId" so template tests run in parallel
+          lifecycleEntries=$(node -e "
+            require('ts-node/register');
+            const { templateRegistry, registerBuiltinTemplates } = require('@microsoft/teamsfx-core-next');
+            registerBuiltinTemplates();
+            const entries = templateRegistry.list()
+              .filter(t => t.testable !== false)
+              .map(t => 'lifecycle.test.ts::' + t.id);
+            console.log(JSON.stringify(entries));
+          ")
+
+          # Merge into a single JSON array
+          cases=$(echo "$nonLifecycle" "$lifecycleEntries" | jq -sc 'add')
           echo "cases=$cases" >> $GITHUB_OUTPUT
-          echo "Discovered cases: $cases"
+          echo "Discovered $(echo "$cases" | jq length) cases ($(echo "$lifecycleEntries" | jq length) lifecycle templates)"
 
       - name: Clean stale resources
         working-directory: packages/cli-next
@@ -176,13 +195,24 @@ jobs:
       - name: Run test
         working-directory: packages/cli-next
         run: |
-          file="tests/e2e/${{ matrix.case }}"
+          entry="${{ matrix.case }}"
+          # Split "lifecycle.test.ts::da/basic" into file + grep pattern
+          file="tests/e2e/${entry%%::*}"
           if [ ! -f "$file" ]; then
             echo "Test file not found: $file"
             exit 1
           fi
-          npx mocha \
+
+          grepArg=""
+          if [[ "$entry" == *"::"* ]]; then
+            templateId="${entry#*::}"
+            # Grep for all language variants of this template
+            grepArg="--grep \"E2E lifecycle: ${templateId} \""
+          fi
+
+          eval npx mocha \
             --config .mocharc.e2e.js \
+            $grepArg \
             "$file"
 
       - name: Get report name
@@ -191,6 +221,8 @@ jobs:
         run: |
           name="${{ matrix.case }}"
           name="${name//'.test.ts'/}"
+          name="${name//'::'/-}"
+          name="${name//'/'/-}"
           echo "name=$name" >> $GITHUB_OUTPUT
 
       - name: Generate failure summary
