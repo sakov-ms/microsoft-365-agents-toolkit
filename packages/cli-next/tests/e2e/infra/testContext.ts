@@ -15,6 +15,8 @@ import { createAtkContext, type AtkContext, LogProvider } from "@microsoft/teams
 import { LogLevel } from "@microsoft/teamsfx-core-next";
 import { createTokenProvider } from "../../../src/auth";
 import { TestTracer, TestProgress } from "./tracer";
+import { isCIMode } from "./config";
+import { createCITokenProvider } from "./ciTokenProvider";
 
 // ---------------------------------------------------------------------------
 // Silent logger — writes to console but doesn't prompt
@@ -94,7 +96,7 @@ export function createTestContext(projectPath: string, correlationId?: string): 
   const progress = new TestProgress();
 
   const ctx = createAtkContext({
-    auth: createTokenProvider(),
+    auth: isCIMode() ? createCITokenProvider() : createTokenProvider(),
     logger: new SilentLogger(),
     telemetry: tracer,
     ui: createSilentUI(),
