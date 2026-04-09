@@ -20,7 +20,7 @@
     "precommit": "lint-staged",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
     "build": "tsc -p ./ --incremental",
-    "postbuild": "eslint --fix \"src/**/*.ts\" \"tests/**/*.ts\" && prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "postbuild": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" && eslint --fix \"src/**/*.ts\" \"tests/**/*.ts\"",
     "test:unit": "nyc mocha \"tests/unit/**/*.test.ts\"",
     "test:integration": "mocha \"tests/integration/**/*.test.ts\"",
     "test": "npm run test:unit",
