@@ -47,9 +47,11 @@ describe("SpecParserAdapter", () => {
   });
 
   describe("createSpecParserAdapter", () => {
-    it("should return a StubSpecParserAdapter", () => {
+    it("should return a RealSpecParserAdapter", () => {
       const adapter = createSpecParserAdapter();
-      expect(adapter).to.be.instanceOf(StubSpecParserAdapter);
+      expect(adapter).to.have.property("validate").that.is.a("function");
+      expect(adapter).to.have.property("listOperations").that.is.a("function");
+      expect(adapter).to.have.property("generate").that.is.a("function");
     });
   });
 });
