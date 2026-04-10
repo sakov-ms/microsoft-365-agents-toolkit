@@ -270,8 +270,8 @@ describe("OpenAPI spec-parser E2E", function () {
   // -----------------------------------------------------------------------
 
   describe("Regenerate command --help", function () {
-    it("atk regenerate --help should exit 0 and show --api-spec-path", async function () {
-      const result = await run(`${ATK_BIN} regenerate --help`);
+    it("atk regenerate action --help should exit 0 and show --api-spec-path", async function () {
+      const result = await run(`${ATK_BIN} regenerate action --help`);
       expect(result.exitCode).to.equal(0);
       expect(result.stdout).to.include("--api-spec-path");
     });
