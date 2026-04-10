@@ -32,6 +32,7 @@ export function filterSpec(
 
   for (const filterItem of filter) {
     const [method, path] = filterItem.split(" ");
+    if (!path || !path.startsWith("/")) continue;
     const methodName = method.toLowerCase();
 
     const pathObj = resolvedSpec.paths?.[path] as Record<string, unknown> | undefined;

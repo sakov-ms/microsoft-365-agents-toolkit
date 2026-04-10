@@ -104,4 +104,12 @@ describe("specParser/filter", () => {
     const filtered = filterSpec([], spec, spec, baseOpts);
     expect(Object.keys(filtered.paths!)).to.have.length(0);
   });
+
+  it("rejects __proto__ path to prevent prototype pollution", () => {
+    const spec = makeSpec();
+    const filtered = filterSpec(["GET __proto__"], spec, spec, baseOpts);
+    expect(Object.keys(filtered.paths!)).to.have.length(0);
+
+    expect((filtered as any).__proto__).to.equal(Object.prototype);
+  });
 });
