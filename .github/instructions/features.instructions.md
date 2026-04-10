@@ -18,7 +18,9 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 > Connector (1), Message Extension (6), OpenAPI (3). Registered via `registerBuiltinTemplates()`.
 > Descriptors support `questions?: QuestionSpec[]` for template-specific prompts (e.g., LLM
 > provider selection for AI agents, graph connector config for connectors).
-> OpenAPI descriptors use `makeOpenApiScaffoldFn()` with a pluggable `SpecParserAdapter`.
+> OpenAPI descriptors use `makeOpenApiScaffoldFn()` with a `RealSpecParserAdapter` backed
+> by the inline `specParser/` module (parse, validate, filter, optimize OpenAPI specs).
+> Dependencies: `@apidevtools/swagger-parser ^10.1.1`, `swagger2openapi 7.0.8` (exact pin).
 >
 > **Scaffold pipeline is E2E-verified.** The scaffold system now includes:
 > - `resolveFallbackDir()` — auto-resolves local fallback ZIPs (explicit param → `TEMPLATE_FALLBACK_DIR` env → bundled `templates/fallback/`)
@@ -49,9 +51,10 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 > - **Progress**: `createProgressAdapter(ui)` bridges to platform progress bar; `silentProgress` for CI
 >
 > **v4 Testing:** Both `packages/core-next/` and `packages/cli-next/` have full test
-> infrastructure (Mocha + Chai + Sinon + NYC). core-next has **492 unit tests**;
-> cli-next has **78 unit + 62 integration tests**; core-next has **24 integration tests**.
-> Plus **9 E2E scaffold tests** verified via cli-next.
+> infrastructure (Mocha + Chai + Sinon + NYC). core-next has **549 unit tests**;
+> cli-next has **78 unit + 62 integration tests**; core-next has **48 integration tests**
+> (includes specParser pipeline and adapter tests).
+> Plus **9 E2E scaffold tests** verified via cli-next + **9 OpenAPI spec-parser E2E tests**.
 > Run with `npm run test:unit` / `npm run test:integration`.
 > CI: `.github/workflows/ci-next.yml` (build → lint, format-check, unit-test, integration-test).
 > ESLint flat config with `shared` + `header`; Prettier shared config; 80% coverage gate.

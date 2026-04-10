@@ -200,9 +200,19 @@ packages/core-next/src/
     │   ├── openApi.ts          — 3 OpenAPI-backed descriptors (da, ai-agent, me)
     │   └── index.ts            — registerBuiltinTemplates() + barrel exports
     └── openApi/         — OpenAPI scaffolding support:
-        ├── specParserAdapter.ts — SpecParserAdapter interface + StubSpecParserAdapter
+        ├── specParserAdapter.ts — SpecParserAdapter interface + StubSpecParserAdapter + createSpecParserAdapter() factory
+        ├── realSpecParserAdapter.ts — RealSpecParserAdapter backed by inline specParser module
         ├── scaffoldFn.ts        — makeOpenApiScaffoldFn() factory (validate → scaffold → parse → generate → write)
         └── index.ts             — Barrel exports
+  specParser/          — Inline OpenAPI spec parser (merged from @microsoft/m365-spec-parser):
+    ├── types.ts         — ParsedSpec, ValidationResult, ErrorType, WarningType, ProjectType, ParseOptions, AuthInfo, etc.
+    ├── constants.ts     — SpecParserMessages, HTTPMethods, WellKnownNames, Limits, AdaptiveCardConstants
+    ├── parser.ts        — parseSpec() → Result<ParsedSpec>, resolveEnvVars(), hasCircularRefs() (wraps swagger-parser + swagger2openapi)
+    ├── utils.ts         — Auth helpers, schema helpers, URL/server validation, parameter generation, naming utils
+    ├── validator.ts     — Abstract Validator + CopilotValidator, SMEValidator, TeamsAIValidator, createValidator() factory
+    ├── filter.ts        — filterSpec() — filter to selected operations + optimize
+    ├── optimizer.ts     — optimizeSpec() — remove unused components/tags/security/vendor extensions
+    └── index.ts         — Barrel exports
   drivers/           — DriverRegistry, DriverDescriptor, createDriver() factory:
     ├── types.ts         — DriverDescriptor, DriverConfig, DriverOutput
     ├── registry.ts      — DriverRegistry class + driverRegistry singleton
@@ -328,6 +338,9 @@ Built-in descriptors in `src/templates/descriptors/` register **43 templates** a
 - DA (11), Bot (8), Tab (5), AI Agent (5), Engine Agent (4), Connector (1), Message Extension (6), OpenAPI (3)
 - All registered via `registerBuiltinTemplates()` in `descriptors/index.ts`
 - OpenAPI descriptors use `makeOpenApiScaffoldFn()` from `templates/openApi/` with a pluggable `SpecParserAdapter`
+- `createSpecParserAdapter()` returns `RealSpecParserAdapter` backed by the inline `specParser/` module
+- `specParser/` provides: parse (swagger-parser + swagger2openapi), validate (per-project-type), filter, optimize
+- Dependencies: `@apidevtools/swagger-parser ^10.1.1`, `swagger2openapi 7.0.8` (exact pin), `openapi-types ^12.1.3` (devDep)
 
 **Bundled fallback ZIPs:** `packages/core-next/templates/fallback/` ships `common.zip`, `ts.zip`, `js.zip`,
 `python.zip`, `csharp.zip` — copied from `templates/build/fallback/`. Listed in `package.json` `files` field.
