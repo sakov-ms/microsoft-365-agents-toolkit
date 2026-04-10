@@ -316,6 +316,9 @@ describe("provisionOp", () => {
     sandbox
       .stub(prerequisites, "ensureSubscription")
       .resolves(ok({ subscriptionId: "s1", subscriptionName: "Sub", tenantId: "t1" }));
+    sandbox
+      .stub(prerequisites, "ensureResourceGroup")
+      .resolves(ok({ name: "rg-myapp-dev", location: "centralus", isNew: false }));
     sandbox.stub(prerequisites, "confirmProvision").resolves(ok(undefined));
 
     // Set RG name in envMap via the executeLifecycle stub

@@ -25,10 +25,15 @@ export function getTemplateReplaceMap(inputs: {
   const map: Record<string, string> = {
     appName: inputs.appName,
     ProjectName: inputs.appName,
+    SolutionName: inputs.appName,
     SafeProjectName: safeName,
     SafeProjectNameLowerCase: safeName.toLowerCase(),
     TargetFramework: inputs.targetFramework ?? "net8.0",
+    PlaceProjectFileInSolutionDir: "",
     pathDelimiter: process.platform === "win32" ? ";" : ":",
+    // C# project type placeholders (used in .csproj/.atkproj template paths)
+    NewProjectTypeName: process.env.TEAMSFX_NEW_PROJECT_TYPE_NAME ?? "M365Agent",
+    NewProjectTypeExt: process.env.TEAMSFX_NEW_PROJECT_TYPE_EXTENSION ?? "atkproj",
   };
 
   // LLM service toggles

@@ -32,6 +32,23 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
+// Clear stale tenant cache files that may hold bogus values (e.g. "faked_tenant_id")
+// from old CLI test runs, preventing them from polluting the MSAL authority URL.
+const cacheDir = path.join(require("os").homedir(), ".fx", "account");
+for (const prefix of ["tenantId.cache.", "homeId.cache."]) {
+  try {
+    if (fs.existsSync(cacheDir)) {
+      for (const f of fs.readdirSync(cacheDir)) {
+        if (f.startsWith(prefix)) {
+          fs.writeFileSync(path.join(cacheDir, f), "", "utf8");
+        }
+      }
+    }
+  } catch {
+    // ignore — cache dir may not exist yet
+  }
+}
+
 // Register builtin drivers for programmatic tests
 import { registerBuiltinDrivers } from "@microsoft/teamsfx-core-next";
 registerBuiltinDrivers();

@@ -165,7 +165,10 @@ export const provisionOp = defineOperation(
       if (subResult.isErr()) return err(subResult.error);
       subInfo = subResult.value;
 
-      if (analysis.unresolvedVars.includes("AZURE_RESOURCE_GROUP_NAME")) {
+      if (
+        analysis.unresolvedVars.includes("AZURE_RESOURCE_GROUP_NAME") ||
+        !envMap.get("AZURE_RESOURCE_GROUP_NAME")
+      ) {
         const projectName = path.basename(projectPath);
         const rgResult = await ensureResourceGroup(
           ctx,

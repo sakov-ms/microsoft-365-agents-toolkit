@@ -49,6 +49,19 @@ import { getConfig } from "./infra/config";
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Set an env var in a dotenv-style string.
+ * If the key already exists (even with an empty value), replace the line.
+ * Otherwise append a new line.
+ */
+function upsertEnvVar(content: string, key: string, value: string): string {
+  const re = new RegExp(`^${key}=.*$`, "m");
+  if (re.test(content)) {
+    return content.replace(re, `${key}=${value}`);
+  }
+  return content.trimEnd() + `\n${key}=${value}\n`;
+}
+
 function getTestFolder(): string {
   const folder = path.resolve(os.homedir(), "atk-e2e-tests");
   if (!fs.existsSync(folder)) {
@@ -151,15 +164,17 @@ for (const template of templates) {
         // --- Phase 3: Provision ---
         await checkpoint.runPhase("provision", async () => {
           await logger.wrapStep("provision", async () => {
-            // Inject resource group name into env file
+            // Inject resource group name and subscription ID into env file.
+            // Templates scaffold .env.dev with empty placeholders like
+            // AZURE_RESOURCE_GROUP_NAME= so we must replace the value,
+            // not just check for key presence.
             const envDir = path.join(projectPath, "env");
             const envFilePath = path.join(envDir, `.env.${envName}`);
             if (fs.existsSync(envFilePath)) {
               let content = fs.readFileSync(envFilePath, "utf-8");
-              if (!content.includes("AZURE_RESOURCE_GROUP_NAME")) {
-                content += `\nAZURE_RESOURCE_GROUP_NAME=${rgName}\n`;
-                fs.writeFileSync(envFilePath, content);
-              }
+              content = upsertEnvVar(content, "AZURE_RESOURCE_GROUP_NAME", rgName);
+              content = upsertEnvVar(content, "AZURE_SUBSCRIPTION_ID", cfg.azureSubscriptionId);
+              fs.writeFileSync(envFilePath, content);
             }
 
             const result = await runOperation(provisionOp, ctx, {

@@ -196,12 +196,19 @@ export async function saveTenantId(accountName: string, tenantId?: string): Prom
   }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function loadTenantId(accountName: string): Promise<string | undefined> {
   const p = TENANT_PATH_PREFIX + accountName;
   if (fs.existsSync(p)) {
     try {
       const val = fs.readFileSync(p, UTF8);
-      return val || undefined;
+      // Only return values that look like real Azure AD tenant IDs (UUIDs).
+      // Stale test values like "faked_tenant_id" must be ignored.
+      if (val && UUID_RE.test(val)) {
+        return val;
+      }
+      return undefined;
     } catch {
       // ignore
     }

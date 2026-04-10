@@ -70,6 +70,13 @@ export async function executeLifecycle(
     // Resolve placeholders in the driver config
     const { resolved: resolvedConfig, unresolved } = resolveConfig(step.with, envMap);
 
+    // Auto-inject projectPath from context when the YAML step doesn't provide
+    // it explicitly.  Many drivers (e.g. teamsApp/zipAppPackage) need a root
+    // project path to resolve relative paths in their config.
+    if (!resolvedConfig.projectPath && ctx.projectPath) {
+      resolvedConfig.projectPath = ctx.projectPath;
+    }
+
     if (unresolved.length > 0) {
       ctx.logger.warning(
         `[lifecycle] Step ${i + 1} ("${step.uses}") has unresolved variables: ${unresolved.map((u) => u.name).join(", ")}`
