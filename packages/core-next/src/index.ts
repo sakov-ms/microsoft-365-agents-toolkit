@@ -28,6 +28,9 @@ export * as project from "./project";
 // === Environment management ===
 export * as environment from "./environment";
 
+// === Spec Parser ===
+export * as specParser from "./specParser";
+
 // === Manifest resolution & utilities ===
 export * as manifest from "./manifest";
 

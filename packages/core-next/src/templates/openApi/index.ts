@@ -8,5 +8,6 @@ export type {
   SpecGenerationResult,
 } from "./specParserAdapter";
 export { StubSpecParserAdapter, createSpecParserAdapter } from "./specParserAdapter";
+export { RealSpecParserAdapter } from "./realSpecParserAdapter";
 export { makeOpenApiScaffoldFn } from "./scaffoldFn";
 export type { OpenApiProjectType } from "./scaffoldFn";

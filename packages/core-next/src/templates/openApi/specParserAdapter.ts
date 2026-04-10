@@ -117,8 +117,11 @@ export class StubSpecParserAdapter implements SpecParserAdapter {
 
 /**
  * Factory function to create a SpecParserAdapter.
- * Returns StubSpecParserAdapter now; swap to real implementation later.
+ * Returns the real implementation backed by the inline spec parser.
+ * Use StubSpecParserAdapter in tests for isolation.
  */
 export function createSpecParserAdapter(): SpecParserAdapter {
-  return new StubSpecParserAdapter();
+  // Lazy import to avoid circular dependency at module scope
+  const { RealSpecParserAdapter } = require("./realSpecParserAdapter");
+  return new RealSpecParserAdapter();
 }
