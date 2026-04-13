@@ -9,11 +9,23 @@ import { createDriver } from "../../createDriver";
 import { userError, systemError } from "../../../core/error";
 import { M365PackageService, mosServiceScopes, AppScope } from "../../../clients/m365";
 
+/** Map lowercase scope strings to AppScope enum values. */
+function normalizeAppScope(val: string | undefined): AppScope | undefined {
+  if (!val) return undefined;
+  const lower = val.toLowerCase();
+  const map: Record<string, AppScope> = {
+    personal: AppScope.Personal,
+    shared: AppScope.Shared,
+    tenant: AppScope.Tenant,
+  };
+  return map[lower];
+}
+
 const inputSchema = z.object({
   /** Path to the zipped app package (.zip) */
   appPackagePath: z.string().min(1),
-  /** Scope for sideloading: Personal, Shared, or Tenant */
-  scope: z.nativeEnum(AppScope).optional(),
+  /** Scope for sideloading: Personal, Shared, or Tenant (case-insensitive) */
+  scope: z.string().optional(),
 });
 
 /**
@@ -64,7 +76,7 @@ export const extendToM365Driver = createDriver({
     }
 
     const service = new M365PackageService();
-    const scope = config.scope ?? AppScope.Personal;
+    const scope = normalizeAppScope(config.scope) ?? AppScope.Personal;
 
     ctx.logger.info(`[teamsApp/extendToM365] Sideloading to M365 (scope: ${scope})...`);
 

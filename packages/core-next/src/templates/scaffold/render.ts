@@ -63,11 +63,19 @@ export function renderTemplateFileData(
   }
 }
 
+// Sentinel markers used to protect undefined variables from being re-parsed
+// by the final Mustache.render pass. These use \x00 (NUL) which never appears
+// in normal template text and is not a Mustache delimiter.
+const SENTINEL_OPEN = "\x00PRESERVE_OPEN\x00";
+const SENTINEL_CLOSE = "\x00PRESERVE_CLOSE\x00";
+const SENTINEL_RE = /\x00PRESERVE_OPEN\x00([A-Za-z_][A-Za-z0-9_]*)\x00PRESERVE_CLOSE\x00/g;
+
 /**
  * Render Mustache template while preserving undefined/null variables as literal text.
  *
- * Parses the template, converts tokens for missing variables from "name" to "text"
- * so they render as the raw placeholder (e.g. `{{appName}}` stays if appName is undefined).
+ * Parses the template, converts tokens for missing variables to sentinel-wrapped
+ * text tokens, rebuilds and renders with Mustache, then restores sentinels to the
+ * original `{{varName}}` placeholders.
  */
 function renderPreservingUndefined(
   template: string,
@@ -75,28 +83,30 @@ function renderPreservingUndefined(
   delimiters: [string, string]
 ): string {
   const tokens = Mustache.parse(template, delimiters);
-  escapeUndefinedTokens(tokens, variables, delimiters);
-  // Reconstruct template from modified tokens and render
+  escapeUndefinedTokens(tokens, variables);
   const escaped = rebuildTemplate(tokens, delimiters);
-  return Mustache.render(escaped, variables, undefined, delimiters);
+  const rendered = Mustache.render(escaped, variables, undefined, delimiters);
+  // Restore sentinels to original delimiters
+  return rendered.replace(SENTINEL_RE, (_, name) => `${delimiters[0]}${name}${delimiters[1]}`);
 }
 
 /**
  * Walk the token tree and convert "name" tokens to "text" tokens
  * if the variable is not defined in the view.
+ *
+ * Uses sentinel markers instead of literal delimiters so the final
+ * Mustache.render pass cannot re-parse them as variables.
  */
 function escapeUndefinedTokens(
   tokens: Array<[string, string, number, number, ...unknown[]]>,
-  variables: Record<string, string>,
-  delimiters: [string, string]
+  variables: Record<string, string>
 ): void {
   for (const token of tokens) {
     const [type, name] = token;
     if (type === "name") {
       if (!(name in variables) || variables[name] === undefined || variables[name] === null) {
-        // Convert to text token — will emit the literal placeholder
         token[0] = "text";
-        token[1] = `${delimiters[0]}${name}${delimiters[1]}`;
+        token[1] = `${SENTINEL_OPEN}${name}${SENTINEL_CLOSE}`;
       }
     } else if (type === "#" || type === "^") {
       // Section/inverted section — recurse into children
@@ -104,7 +114,7 @@ function escapeUndefinedTokens(
         | Array<[string, string, number, number, ...unknown[]]>
         | undefined;
       if (children) {
-        escapeUndefinedTokens(children, variables, delimiters);
+        escapeUndefinedTokens(children, variables);
       }
     }
   }

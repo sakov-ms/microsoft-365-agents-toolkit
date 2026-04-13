@@ -52,9 +52,18 @@ export function createDriver<TConfig = DriverConfig>(
       const startMs = Date.now();
       const result = await execute(ctx, parsed.data);
       const durationMs = Date.now() - startMs;
-      ctx.telemetry.sendTelemetryEvent("driver-end", { driver: id }, { durationMs });
+      ctx.telemetry.sendTelemetryEvent(
+        "driver-end",
+        { driver: id, success: result.isOk() ? "true" : "false" },
+        { duration: durationMs }
+      );
       return result;
     } catch (error) {
+      ctx.telemetry.sendTelemetryEvent(
+        "driver-end",
+        { driver: id, success: "false" },
+        { duration: 0 }
+      );
       return err(wrapUnexpectedError(id, error));
     }
   };

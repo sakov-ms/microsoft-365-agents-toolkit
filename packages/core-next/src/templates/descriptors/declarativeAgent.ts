@@ -136,6 +136,8 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.TypeSpec, "common"),
     displayOrder: 7,
+    // typeSpec/compile driver not yet ported to core-next — skip E2E tests
+    testable: false,
   },
   {
     id: "da/mcp-remote",
