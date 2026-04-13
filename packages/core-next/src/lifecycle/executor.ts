@@ -121,10 +121,12 @@ export async function executeLifecycle(
 
     const outputs = result.value.outputs;
 
-    // Write driver outputs to environment map
+    // Write driver outputs to environment map.
+    // Drivers may key their outputs by the camelCase YAML name (e.g. "teamsAppId")
+    // or by the UPPER_CASE env-var name (e.g. "TEAMS_APP_ID"). Accept both.
     if (step.writeToEnvironmentFile && outputs) {
       for (const [yamlKey, envVarName] of Object.entries(step.writeToEnvironmentFile)) {
-        const outputValue = outputs[yamlKey];
+        const outputValue = outputs[yamlKey] ?? outputs[envVarName];
         if (outputValue !== undefined) {
           envMap.set(envVarName, outputValue);
         }
