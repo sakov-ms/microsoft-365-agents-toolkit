@@ -161,46 +161,64 @@ for (const template of templates) {
           });
         });
 
+        // --- Lifecycle detection ---
+        // Some templates (e.g. da/typespec, da/mcp-local) don't produce
+        // m365agents.yml and therefore have no provision/deploy lifecycle.
+        // Skip those phases gracefully instead of failing.
+        const yamlPath = path.join(projectPath, "m365agents.yml");
+        const yamlExists = fs.existsSync(yamlPath);
+        const yamlContent = yamlExists ? fs.readFileSync(yamlPath, "utf-8") : "";
+        const hasProvisionLifecycle = yamlExists && yamlContent.includes("provision:");
+        const hasDeployLifecycle = yamlExists && yamlContent.includes("deploy:");
+
         // --- Phase 3: Provision ---
-        await checkpoint.runPhase("provision", async () => {
-          await logger.wrapStep("provision", async () => {
-            // Inject resource group name and subscription ID into env file.
-            // Templates scaffold .env.dev with empty placeholders like
-            // AZURE_RESOURCE_GROUP_NAME= so we must replace the value,
-            // not just check for key presence.
-            const envDir = path.join(projectPath, "env");
-            const envFilePath = path.join(envDir, `.env.${envName}`);
-            if (fs.existsSync(envFilePath)) {
-              let content = fs.readFileSync(envFilePath, "utf-8");
+        if (hasProvisionLifecycle) {
+          await checkpoint.runPhase("provision", async () => {
+            await logger.wrapStep("provision", async () => {
+              // Inject resource group name and subscription ID into env file.
+              // Templates scaffold .env.dev with empty placeholders like
+              // AZURE_RESOURCE_GROUP_NAME= so we must replace the value,
+              // not just check for key presence.
+              // Some templates may not scaffold .env.dev at all, so create it
+              // when missing to ensure env vars are always available.
+              const envDir = path.join(projectPath, "env");
+              const envFilePath = path.join(envDir, `.env.${envName}`);
+              if (!fs.existsSync(envDir)) {
+                fs.mkdirSync(envDir, { recursive: true });
+              }
+              let content = fs.existsSync(envFilePath) ? fs.readFileSync(envFilePath, "utf-8") : "";
               content = upsertEnvVar(content, "AZURE_RESOURCE_GROUP_NAME", rgName);
               content = upsertEnvVar(content, "AZURE_SUBSCRIPTION_ID", cfg.azureSubscriptionId);
               fs.writeFileSync(envFilePath, content);
-            }
 
-            const result = await runOperation(provisionOp, ctx, {
-              projectPath,
-              envName,
-              skipConsent: true,
+              const result = await runOperation(provisionOp, ctx, {
+                projectPath,
+                envName,
+                skipConsent: true,
+              });
+              expect(
+                result.isOk(),
+                `provision failed: ${result.isErr() ? result.error.message : ""}`
+              ).to.be.true;
+
+              // Validate provision
+              const envMap = await loadEnvMap(projectPath, envName);
+              const assertions = await runValidators(
+                getValidationTags(template),
+                envMap,
+                projectPath
+              );
+              return { assertions, env: Object.fromEntries(envMap) };
             });
-            expect(result.isOk(), `provision failed: ${result.isErr() ? result.error.message : ""}`)
-              .to.be.true;
-
-            // Validate provision
-            const envMap = await loadEnvMap(projectPath, envName);
-            const assertions = await runValidators(
-              getValidationTags(template),
-              envMap,
-              projectPath
-            );
-            return { assertions, env: Object.fromEntries(envMap) };
           });
-        });
+        } else {
+          await logger.wrapStep("provision", async () => {
+            // No provision lifecycle — skip
+            return undefined;
+          });
+        }
 
         // --- Phase 4: Deploy (skip if template has no deploy lifecycle) ---
-        const yamlPath = path.join(projectPath, "m365agents.yml");
-        const hasDeployLifecycle =
-          fs.existsSync(yamlPath) && fs.readFileSync(yamlPath, "utf-8").includes("deploy:");
-
         if (hasDeployLifecycle) {
           await checkpoint.runPhase("deploy", async () => {
             await logger.wrapStep("deploy", async () => {

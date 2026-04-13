@@ -107,23 +107,23 @@ describe("CLI syntax verification", function () {
       expect(fs.existsSync(projectPath), `project dir should exist`).to.be.true;
     });
 
-    it("atk new tab dashboard --name TestDash --non-interactive", async function () {
+    it("atk new tab basic --name TestTab --non-interactive", async function () {
       const result = await run(
-        `${ATK_BIN} new tab dashboard --name TestDash --folder ${dir} --non-interactive`,
+        `${ATK_BIN} new tab basic --name TestTab --folder ${dir} --non-interactive`,
         dir
       );
       expect(result.exitCode, `stderr: ${result.stderr}`).to.equal(0);
-      const projectPath = path.join(dir, "TestDash");
+      const projectPath = path.join(dir, "TestTab");
       expect(fs.existsSync(projectPath), `project dir should exist`).to.be.true;
     });
 
-    it("atk new bot notification-express --name TestNotif --non-interactive", async function () {
+    it("atk new cea basic --name TestCEA --non-interactive", async function () {
       const result = await run(
-        `${ATK_BIN} new bot notification-express --name TestNotif --folder ${dir} --non-interactive`,
+        `${ATK_BIN} new cea basic --name TestCEA --folder ${dir} --non-interactive`,
         dir
       );
       expect(result.exitCode, `stderr: ${result.stderr}`).to.equal(0);
-      const projectPath = path.join(dir, "TestNotif");
+      const projectPath = path.join(dir, "TestCEA");
       expect(fs.existsSync(projectPath), `project dir should exist`).to.be.true;
     });
 
