@@ -37,6 +37,7 @@ export const openApiTemplateDescriptors: TemplateDescriptor[] = [
     displayOrder: 12,
     questions: [apiSpecPathQuestion(), apiOperationsQuestion()],
     tags: ["openapi"],
+    testable: false,
   },
   {
     id: "ai-agent/rag-from-spec",
@@ -55,6 +56,7 @@ export const openApiTemplateDescriptors: TemplateDescriptor[] = [
       openAiKeyQuestion(),
     ],
     tags: ["openapi"],
+    testable: false,
   },
   {
     id: "me/from-spec",
@@ -66,5 +68,6 @@ export const openApiTemplateDescriptors: TemplateDescriptor[] = [
     displayOrder: 7,
     questions: [apiSpecPathQuestion(), apiOperationsQuestion()],
     tags: ["openapi"],
+    testable: false,
   },
 ];

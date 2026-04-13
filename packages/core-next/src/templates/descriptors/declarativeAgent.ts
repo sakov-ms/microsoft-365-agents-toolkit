@@ -164,6 +164,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.GraphConnector),
     displayOrder: 10,
+    testable: false,
   },
   {
     id: "da/metaos",
