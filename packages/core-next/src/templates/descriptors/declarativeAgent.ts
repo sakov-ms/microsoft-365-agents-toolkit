@@ -34,7 +34,7 @@ export const DATemplateNames = {
  * This is a factory — all DA templates share the same scaffold pipeline,
  * varying only in template name, language, and replace map.
  */
-function makeDAScaffoldFn(templateName: string) {
+function makeDAScaffoldFn(templateName: string, scaffoldLang?: string) {
   return async (ctx: AtkContext, opts: TemplateActionOptions) => {
     const replaceMap: Record<string, string> = {
       ...getTemplateReplaceMap({
@@ -57,7 +57,7 @@ function makeDAScaffoldFn(templateName: string) {
 
     const tplInfo: TemplateInfo = {
       templateName,
-      language: convertToLangKey(opts.language),
+      language: scaffoldLang ?? convertToLangKey(opts.language),
       replaceMap,
       filterFn: opts.filterFn as ((fileName: string) => boolean) | undefined,
     };
@@ -134,7 +134,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     description: "Generate API plugin from a TypeSpec definition",
     category: "declarative-agent",
     languages: ["typescript"],
-    scaffoldFn: makeDAScaffoldFn(DATemplateNames.TypeSpec),
+    scaffoldFn: makeDAScaffoldFn(DATemplateNames.TypeSpec, "common"),
     displayOrder: 7,
   },
   {
@@ -153,7 +153,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     description: "Run a local MCP server alongside the agent",
     category: "declarative-agent",
     languages: ["typescript", "javascript"],
-    scaffoldFn: makeDAScaffoldFn(DATemplateNames.MCPLocal),
+    scaffoldFn: makeDAScaffoldFn(DATemplateNames.MCPLocal, "common"),
     displayOrder: 9,
   },
   {

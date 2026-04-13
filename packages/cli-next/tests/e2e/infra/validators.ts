@@ -94,13 +94,6 @@ async function validateProjectStructure(
   projectPath: string
 ): Promise<AssertionResult[]> {
   const results: AssertionResult[] = [];
-  const yamlPath = path.join(projectPath, "m365agents.yml");
-  results.push({
-    name: "m365agents.yml exists",
-    passed: fs.existsSync(yamlPath),
-    expected: "file exists",
-    actual: fs.existsSync(yamlPath) ? "exists" : "missing",
-  });
 
   const envDir = path.join(projectPath, "env");
   results.push({
@@ -128,14 +121,15 @@ const VALIDATOR_MAP: Record<string, ValidatorFn> = {
 
 /**
  * Run validators selected by tags.
- * Always includes "project" and "teamsApp" validators.
+ * Always includes "project" validator. Additional validators (teamsApp, bot,
+ * tab, etc.) are selected by the caller based on template lifecycle.
  */
 export async function runValidators(
   tags: string[],
   envMap: EnvMap,
   projectPath: string
 ): Promise<AssertionResult[]> {
-  const allTags = new Set(["project", "teamsApp", ...tags]);
+  const allTags = new Set(["project", ...tags]);
   const results: AssertionResult[] = [];
   for (const tag of allTags) {
     const fn = VALIDATOR_MAP[tag];

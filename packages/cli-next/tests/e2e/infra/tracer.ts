@@ -315,19 +315,27 @@ const requiredProperties: TelemetryRule = {
   },
 };
 
-/** Success path should not contain error events. */
+/** A successful *-end event should not also be emitted as a telemetry-error. */
 const noSpuriousErrors: TelemetryRule = {
   name: "no-spurious-errors",
   check(spans) {
-    const hasSuccessEnd = spans.some(
-      (s) => s.name.endsWith("-end") && s.attributes.success === "true"
-    );
-    if (!hasSuccessEnd) return [];
+    // Build a set of operation prefixes that ended successfully
+    const successOps = new Set<string>();
+    for (const s of spans) {
+      if (s.name.endsWith("-end") && s.attributes.success === "true") {
+        successOps.add(s.name.replace("-end", ""));
+      }
+    }
+    // Flag error events whose operation ended successfully
     return spans
       .filter((s) => s.kind === "telemetry-error")
+      .filter((s) => {
+        const op = s.name.replace("-end", "").replace("-start", "");
+        return successOps.has(op);
+      })
       .map((s) => ({
         rule: "no-spurious-errors",
-        message: `Error event "${s.name}" emitted in success path`,
+        message: `Error event "${s.name}" emitted for operation that ended successfully`,
         spanName: s.name,
       }));
   },

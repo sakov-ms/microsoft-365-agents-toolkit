@@ -63,6 +63,9 @@ devDependencies:
   '@types/chai':
     specifier: ^4.2.14
     version: 4.3.20
+  '@types/js-yaml':
+    specifier: ^4.0.9
+    version: 4.0.9
   '@types/mocha':
     specifier: ^10.0.10
     version: 10.0.10
@@ -93,6 +96,9 @@ devDependencies:
   eslint-plugin-prettier:
     specifier: ^5.5.0
     version: 5.5.5(eslint-config-prettier@10.1.8)(eslint@9.39.4)(prettier@3.8.1)
+  js-yaml:
+    specifier: ^4.1.0
+    version: 4.1.1
   lint-staged:
     specifier: ^10.5.4
     version: 10.5.4
@@ -1084,6 +1090,10 @@ packages:
 
   /@types/estree@1.0.8:
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
+    dev: true
+
+  /@types/js-yaml@4.0.9:
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
     dev: true
 
   /@types/json-schema@7.0.15:

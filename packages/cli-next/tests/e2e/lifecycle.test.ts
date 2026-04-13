@@ -25,6 +25,7 @@ import * as path from "path";
 import { expect } from "chai";
 import { describe, it, afterEach } from "mocha";
 import { v4 as uuidv4 } from "uuid";
+import * as yaml from "js-yaml";
 import {
   templateRegistry,
   registerBuiltinTemplates,
@@ -90,6 +91,33 @@ function getValidationTags(template: TemplateDescriptor): string[] {
   return template.tags ?? [];
 }
 
+/**
+ * Driver ID prefixes that require an Azure resource group.
+ * Templates whose provision/deploy steps only use teamsApp/* or cli/* drivers
+ * don't need Azure infra and can skip RG creation entirely.
+ */
+const AZURE_DRIVER_PREFIXES = ["arm/", "azureFunctions/", "azureAppService/", "azureStorage/"];
+
+/**
+ * Parse m365agents.yml and check whether any provision/deploy step uses
+ * a driver that requires Azure infrastructure (e.g. arm/deploy).
+ */
+function yamlNeedsAzure(yamlContent: string): boolean {
+  try {
+    const doc = yaml.load(yamlContent) as Record<string, unknown> | undefined;
+    if (!doc) return false;
+    const steps = [
+      ...((doc.provision as Array<{ uses?: string }>) ?? []),
+      ...((doc.deploy as Array<{ uses?: string }>) ?? []),
+    ];
+    return steps.some(
+      (s) => s.uses && AZURE_DRIVER_PREFIXES.some((prefix) => s.uses!.startsWith(prefix))
+    );
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Data-driven test generation
 // ---------------------------------------------------------------------------
@@ -148,19 +176,6 @@ for (const template of templates) {
           });
         });
 
-        // --- Phase 2: Create resource group ---
-        await checkpoint.runPhase("create-rg", async () => {
-          await logger.wrapStep("create-rg", async () => {
-            const ok = await createResourceGroup({
-              name: rgName,
-              location: "westus",
-              templateId: template.id,
-              runId: cfg.githubRunId,
-            });
-            expect(ok, "resource group creation must succeed").to.be.true;
-          });
-        });
-
         // --- Lifecycle detection ---
         // Some templates (e.g. da/typespec, da/mcp-local) don't produce
         // m365agents.yml and therefore have no provision/deploy lifecycle.
@@ -170,6 +185,22 @@ for (const template of templates) {
         const yamlContent = yamlExists ? fs.readFileSync(yamlPath, "utf-8") : "";
         const hasProvisionLifecycle = yamlExists && yamlContent.includes("provision:");
         const hasDeployLifecycle = yamlExists && yamlContent.includes("deploy:");
+        const needsAzure = yamlExists && yamlNeedsAzure(yamlContent);
+
+        // --- Phase 2: Create resource group (only when needed) ---
+        if (needsAzure) {
+          await checkpoint.runPhase("create-rg", async () => {
+            await logger.wrapStep("create-rg", async () => {
+              const ok = await createResourceGroup({
+                name: rgName,
+                location: "westus",
+                templateId: template.id,
+                runId: cfg.githubRunId,
+              });
+              expect(ok, "resource group creation must succeed").to.be.true;
+            });
+          });
+        }
 
         // --- Phase 3: Provision ---
         if (hasProvisionLifecycle) {
@@ -241,7 +272,12 @@ for (const template of templates) {
         // --- Phase 5: Final validation ---
         await logger.wrapStep("validate", async () => {
           const envMap = await loadEnvMap(projectPath, envName);
-          const assertions = await runValidators(getValidationTags(template), envMap, projectPath);
+          const validationTags = getValidationTags(template);
+          // Only check teamsApp when provision lifecycle was executed
+          if (hasProvisionLifecycle) {
+            validationTags.push("teamsApp");
+          }
+          const assertions = await runValidators(validationTags, envMap, projectPath);
           const failed = assertions.filter((a) => !a.passed);
           expect(
             allPassed(assertions),
