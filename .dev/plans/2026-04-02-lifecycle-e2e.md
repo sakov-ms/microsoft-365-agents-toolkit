@@ -1,6 +1,6 @@
 # Plan: Provision/Deploy Lifecycle E2E under cli-next
 
-**Status:** Phases 1–4b Complete, Phase 5 Integration Tests Complete (Manual E2E pending)
+**Status:** Phases 1–5 Complete, CI E2E passing
 **Created:** 2026-04-02
 **Updated:** 2026-04-02
 
@@ -83,3 +83,8 @@ Enable complete provision, deploy, and publish lifecycle execution via cli-next 
 - 2026-04-02 — Phase 4b complete; cli/runNpmCommand driver for echo bot deploy; 21 total drivers; 486 + 47 tests passing
 - 2026-04-02 — Phase 5 integration tests complete; data-driven pipeline tests from features.json; 55 integration tests (3 coverage + 14 provision + 13 deploy + 13 publish + 12 existing); 486 core-next + 47 unit + 55 integration = 588 total tests passing
 - 2026-04-03 — CI-next: created `.github/workflows/ci-next.yml` (build → lint, format-check, unit-test, integration-test); ESLint flat configs + Prettier configs for core-next & cli-next; excluded v4 packages from old `unit-test.yml`; added `setup:next` script + `"next"` range in setup-project action; 0 lint errors, format clean, 588 tests passing
+- 2026-04-10 — Fixed all 43 CI E2E lifecycle test failures (3 root causes):
+  1. C# scaffold EISDIR: Added missing Mustache variables (NewProjectTypeName, NewProjectTypeExt, SolutionName, PlaceProjectFileInSolutionDir) to replaceMap.ts
+  2. Empty AZURE_RESOURCE_GROUP_NAME: Added upsertEnvVar() helper in lifecycle.test.ts + empty-string check in provisionOp
+  3. Missing projectPath: executor.ts now auto-injects ctx.projectPath into envMap
+  Also: UUID validation for cached tenant IDs, stale cache cleanup in E2E setup

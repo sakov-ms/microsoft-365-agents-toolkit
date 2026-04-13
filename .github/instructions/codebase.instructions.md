@@ -200,8 +200,8 @@ import { ok } from "neverthrow";
 - **Test file naming:** `*.test.ts` (all packages: fx-core, core-next, cli-next)
 - **Test location:** `tests/` directory mirroring `src/` structure
 - **Test types:** `tests/unit/` for unit tests, `tests/integration/` for integration tests
-- **Test counts:** core-next: 492 unit + 24 integration; cli-next: 78 unit + 62 integration
-- **Lint status:** core-next: 154 warnings (all `no-explicit-any`); cli-next: 19 warnings (all `no-explicit-any`)
+- **Test counts:** core-next: 550 unit + 48 integration; cli-next: 78 unit + 62 integration
+- **Lint status:** core-next: 175 warnings (all `no-explicit-any`); cli-next: 32 warnings (all `no-explicit-any`)
 - Every new feature or bug fix must include tests
 - Run: `cd packages/<pkg> && npm run test:unit`
 

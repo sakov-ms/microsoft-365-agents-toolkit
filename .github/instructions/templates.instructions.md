@@ -85,8 +85,12 @@ Common placeholders:
 | `{{TargetFramework}}` | e.g., `net8.0` |
 | `{{useOpenAI}}` / `{{useAzureOpenAI}}` | Model provider toggle |
 | `{{DeclarativeCopilot}}` | Declarative Agent flag |
+| `{{NewProjectTypeName}}` | C# project type name (default: `M365Agent`) |
+| `{{NewProjectTypeExt}}` | C# project file extension (default: `atkproj`) |
+| `{{SolutionName}}` | C# solution name (defaults to `appName`) |
+| `{{PlaceProjectFileInSolutionDir}}` | C# project-in-solution layout flag |
 
-Full map: `packages/fx-core/src/component/generator/templates/templateReplaceMap.ts`
+Full map: `packages/fx-core/src/component/generator/templates/templateReplaceMap.ts` (v3) and `packages/core-next/src/templates/scaffold/replaceMap.ts` (v4)
 
 ## Template ID Naming
 
