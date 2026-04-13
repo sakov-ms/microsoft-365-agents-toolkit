@@ -20,8 +20,6 @@ export const AiAgentTemplateNames = {
   Chat: "custom-copilot-basic",
   RagAiSearch: "custom-copilot-rag-azure-ai-search",
   RagCustom: "custom-copilot-rag-customize",
-  Assistant: "custom-copilot-assistant-new",
-  AssistantOpenAI: "custom-copilot-assistant-assistants-api",
 } as const;
 
 /**
@@ -91,26 +89,6 @@ export const aiAgentTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript", "csharp", "python"],
     scaffoldFn: makeAiAgentScaffoldFn(AiAgentTemplateNames.RagCustom),
     displayOrder: 3,
-    questions: llmQuestions,
-  },
-  {
-    id: "ai-agent/assistant",
-    name: "AI Assistant Bot",
-    description: "A Teams AI bot using the Assistants pattern",
-    category: "ai-agent",
-    languages: ["typescript", "javascript", "python"],
-    scaffoldFn: makeAiAgentScaffoldFn(AiAgentTemplateNames.Assistant),
-    displayOrder: 4,
-    questions: llmQuestions,
-  },
-  {
-    id: "ai-agent/assistant-openai",
-    name: "AI Assistant Bot (OpenAI Assistants API)",
-    description: "A Teams AI bot using the OpenAI Assistants API",
-    category: "ai-agent",
-    languages: ["typescript", "javascript", "python"],
-    scaffoldFn: makeAiAgentScaffoldFn(AiAgentTemplateNames.AssistantOpenAI),
-    displayOrder: 5,
     questions: llmQuestions,
   },
 ];

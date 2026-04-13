@@ -194,35 +194,35 @@ describe("Template Descriptors", () => {
       expect(daTemplateDescriptors).to.have.length(11);
     });
 
-    it("should have 8 bot descriptors", () => {
-      expect(botTemplateDescriptors).to.have.length(8);
+    it("should have 1 bot descriptor", () => {
+      expect(botTemplateDescriptors).to.have.length(1);
     });
 
-    it("should have 5 tab descriptors", () => {
-      expect(tabTemplateDescriptors).to.have.length(5);
+    it("should have 1 tab descriptor", () => {
+      expect(tabTemplateDescriptors).to.have.length(1);
     });
 
-    it("should have 5 AI agent descriptors", () => {
-      expect(aiAgentTemplateDescriptors).to.have.length(5);
+    it("should have 3 AI agent descriptors", () => {
+      expect(aiAgentTemplateDescriptors).to.have.length(3);
     });
 
-    it("should have 4 engine agent descriptors", () => {
-      expect(engineAgentTemplateDescriptors).to.have.length(4);
+    it("should have 3 engine agent descriptors", () => {
+      expect(engineAgentTemplateDescriptors).to.have.length(3);
     });
 
     it("should have 1 connector descriptor", () => {
       expect(connectorTemplateDescriptors).to.have.length(1);
     });
 
-    it("should have 6 message extension descriptors", () => {
-      expect(messageExtensionTemplateDescriptors).to.have.length(6);
+    it("should have 1 message extension descriptor", () => {
+      expect(messageExtensionTemplateDescriptors).to.have.length(1);
     });
 
     it("should have 3 OpenAPI descriptors", () => {
       expect(openApiTemplateDescriptors).to.have.length(3);
     });
 
-    it("should have 43 total descriptors", () => {
+    it("should have 24 total descriptors", () => {
       const total =
         daTemplateDescriptors.length +
         botTemplateDescriptors.length +
@@ -232,7 +232,7 @@ describe("Template Descriptors", () => {
         connectorTemplateDescriptors.length +
         messageExtensionTemplateDescriptors.length +
         openApiTemplateDescriptors.length;
-      expect(total).to.equal(43);
+      expect(total).to.equal(24);
     });
   });
 });

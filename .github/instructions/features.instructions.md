@@ -13,9 +13,9 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 ```
 
 > **v4 Note:** `packages/core-next/src/templates/` contains a `TemplateRegistry` with
-> `TemplateDescriptor` records. **43 descriptors** are registered across 8 files in
-> `src/templates/descriptors/`: DA (11), Bot (8), Tab (5), AI Agent (5), Engine Agent (4),
-> Connector (1), Message Extension (6), OpenAPI (3). Registered via `registerBuiltinTemplates()`.
+> `TemplateDescriptor` records. **24 descriptors** are registered across 8 files in
+> `src/templates/descriptors/`: DA (11), Bot (1), Tab (1), AI Agent (3), Engine Agent (3),
+> Connector (1), Message Extension (1), OpenAPI (3). Registered via `registerBuiltinTemplates()`.
 > Descriptors support `questions?: QuestionSpec[]` for template-specific prompts (e.g., LLM
 > provider selection for AI agents, graph connector config for connectors).
 > OpenAPI descriptors use `makeOpenApiScaffoldFn()` with a `RealSpecParserAdapter` backed

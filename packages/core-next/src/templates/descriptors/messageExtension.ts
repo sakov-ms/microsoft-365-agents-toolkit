@@ -13,16 +13,6 @@ import { type TemplateInfo, convertToLangKey } from "../scaffold/types";
  */
 export const MessageExtensionTemplateNames = {
   SearchBased: "message-extension-v2",
-  /** API key variant — no dedicated local folder; remote only */
-  SearchApiKey: "copilot-plugin-from-scratch-api-key",
-  /** API SSO variant — no dedicated local folder; remote only */
-  ApiSSO: "api-message-extension-sso",
-  /** M365 variant — uses same message-extension-v2 folder */
-  M365: "message-extension-v2",
-  /** Action variant — no dedicated local folder; remote only */
-  Action: "message-extension-action",
-  /** Link unfurling — no dedicated local folder; remote only */
-  LinkUnfurling: "link-unfurling",
 } as const;
 
 /**
@@ -58,53 +48,8 @@ export const messageExtensionTemplateDescriptors: TemplateDescriptor[] = [
     name: "Search-based Message Extension",
     description: "A search-based message extension for Copilot",
     category: "message-extension",
-    languages: ["typescript", "javascript", "csharp"],
+    languages: ["typescript", "python", "csharp"],
     scaffoldFn: makeMEScaffoldFn(MessageExtensionTemplateNames.SearchBased),
     displayOrder: 1,
-  },
-  {
-    id: "me/search-api-key",
-    name: "Search Message Extension (API Key)",
-    description: "A search-based message extension with API key authentication",
-    category: "message-extension",
-    languages: ["typescript", "javascript"],
-    scaffoldFn: makeMEScaffoldFn(MessageExtensionTemplateNames.SearchApiKey),
-    displayOrder: 2,
-  },
-  {
-    id: "me/api-sso",
-    name: "API Message Extension (SSO)",
-    description: "An API-based message extension with Single Sign-On",
-    category: "message-extension",
-    languages: ["typescript"],
-    scaffoldFn: makeMEScaffoldFn(MessageExtensionTemplateNames.ApiSSO),
-    displayOrder: 3,
-  },
-  {
-    id: "me/m365",
-    name: "M365 Message Extension",
-    description: "A message extension for Microsoft 365",
-    category: "message-extension",
-    languages: ["typescript", "python"],
-    scaffoldFn: makeMEScaffoldFn(MessageExtensionTemplateNames.M365),
-    displayOrder: 4,
-  },
-  {
-    id: "me/action",
-    name: "Action Message Extension",
-    description: "A message extension that performs actions",
-    category: "message-extension",
-    languages: ["typescript"],
-    scaffoldFn: makeMEScaffoldFn(MessageExtensionTemplateNames.Action),
-    displayOrder: 5,
-  },
-  {
-    id: "me/link-unfurling",
-    name: "Link Unfurling",
-    description: "A message extension that unfurls links into rich previews",
-    category: "message-extension",
-    languages: ["typescript"],
-    scaffoldFn: makeMEScaffoldFn(MessageExtensionTemplateNames.LinkUnfurling),
-    displayOrder: 6,
   },
 ];

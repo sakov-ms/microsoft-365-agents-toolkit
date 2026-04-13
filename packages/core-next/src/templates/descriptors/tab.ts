@@ -13,12 +13,6 @@ import { type TemplateInfo, convertToLangKey } from "../scaffold/types";
  */
 export const TabTemplateNames = {
   Basic: "basic-tab",
-  /** SSO NAA tab — no local folder yet; uses remote download */
-  SSO: "sso-tab-naa",
-  /** Dashboard tab — no local folder yet; uses remote download */
-  Dashboard: "dashboard-tab",
-  SSRBasic: "non-sso-tab-ssr",
-  SSRSSO: "sso-tab-ssr",
 } as const;
 
 /**
@@ -57,41 +51,5 @@ export const tabTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "csharp"],
     scaffoldFn: makeTabScaffoldFn(TabTemplateNames.Basic),
     displayOrder: 1,
-  },
-  {
-    id: "tab/sso",
-    name: "SSO Tab",
-    description: "A tab app with Single Sign-On using NAA",
-    category: "tab",
-    languages: ["typescript"],
-    scaffoldFn: makeTabScaffoldFn(TabTemplateNames.SSO),
-    displayOrder: 2,
-  },
-  {
-    id: "tab/dashboard",
-    name: "Dashboard Tab",
-    description: "A tab app with a dashboard layout",
-    category: "tab",
-    languages: ["typescript", "javascript"],
-    scaffoldFn: makeTabScaffoldFn(TabTemplateNames.Dashboard),
-    displayOrder: 3,
-  },
-  {
-    id: "tab/ssr-basic",
-    name: "SSR Tab (Basic)",
-    description: "A server-side rendered tab without SSO",
-    category: "tab",
-    languages: ["csharp"],
-    scaffoldFn: makeTabScaffoldFn(TabTemplateNames.SSRBasic),
-    displayOrder: 4,
-  },
-  {
-    id: "tab/ssr-sso",
-    name: "SSR Tab (SSO)",
-    description: "A server-side rendered tab with Single Sign-On",
-    category: "tab",
-    languages: ["csharp"],
-    scaffoldFn: makeTabScaffoldFn(TabTemplateNames.SSRSSO),
-    displayOrder: 5,
   },
 ];

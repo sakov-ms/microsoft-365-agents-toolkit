@@ -189,14 +189,14 @@ packages/core-next/src/
     │   ├── render.ts        — Mustache rendering (.tpl files, preserves undefined vars)
     │   ├── replaceMap.ts    — getTemplateReplaceMap() (appName, safeProjectName, etc.)
     │   └── types.ts         — TemplateInfo, ScaffoldContext, TemplateConfig, convertToLangKey()
-    ├── descriptors/     — Built-in template registrations (43 descriptors):
+    ├── descriptors/     — Built-in template registrations (24 descriptors):
     │   ├── declarativeAgent.ts — 11 DA descriptors (da/* IDs)
-    │   ├── bot.ts              — 8 bot descriptors
-    │   ├── tab.ts              — 5 tab descriptors
-    │   ├── aiAgent.ts          — 5 AI agent descriptors (with LLM questions)
-    │   ├── engineAgent.ts      — 4 custom engine agent descriptors
+    │   ├── bot.ts              — 1 bot descriptor (echo only)
+    │   ├── tab.ts              — 1 tab descriptor (basic only)
+    │   ├── aiAgent.ts          — 3 AI agent descriptors (with LLM questions)
+    │   ├── engineAgent.ts      — 3 custom engine agent descriptors
     │   ├── connector.ts        — 1 connector descriptor (with graph connector questions)
-    │   ├── messageExtension.ts — 6 message extension descriptors
+    │   ├── messageExtension.ts — 1 message extension descriptor (search-based)
     │   ├── openApi.ts          — 3 OpenAPI-backed descriptors (da, ai-agent, me)
     │   └── index.ts            — registerBuiltinTemplates() + barrel exports
     └── openApi/         — OpenAPI scaffolding support:
@@ -282,7 +282,7 @@ Key patterns:
 The lifecycle engine in `src/lifecycle/` replaces the ad-hoc YAML action dispatch in fx-core:
 1. `parseProjectYaml()` — reads `m365agents.yml` into a `RawProjectModel`
 2. `resolveLifecycle()` — matches each action to a registered driver via `DriverRegistry`
-3. `executeLifecycle()` — runs resolved actions in sequence, collecting results; accepts optional `LifecycleProgress` callbacks
+3. `executeLifecycle()` — runs resolved actions in sequence, collecting results; accepts optional `LifecycleProgress` callbacks. Auto-injects `ctx.projectPath` into envMap as `PROJECT_PATH` if not already present (needed by drivers like `teamsApp/zipAppPackage`)
 
 ### Lifecycle Operations
 
@@ -299,7 +299,7 @@ complete orchestration functions exposed as `Operation` records via `defineOpera
 - `ensureM365Auth(ctx)` → acquires M365 token, extracts tenant ID from JWT claims
 - `ensureAzureAuth(ctx)` → triggers Azure login via `getIdentityCredentialAsync`
 - `ensureSubscription(ctx, envMap)` → auto-selects single sub or prompts for multiple
-- `ensureResourceGroup(ctx, envMap, subscriptionId, projectName, envName)` → prompts with `rg-{safeName}{suffix}-{envName}` default
+- `ensureResourceGroup(ctx, envMap, subscriptionId, projectName, envName)` → prompts with `rg-{safeName}{suffix}-{envName}` default; also triggered when `AZURE_RESOURCE_GROUP_NAME` is present but empty
 - `ensureResourceSuffix(envMap)` → generates/reuses 6-char random suffix
 - `confirmProvision(ctx, envName, m365Info?, azureInfo?)` → consent dialog with context details
 - `confirmDeploy(ctx, envName)` → skipped for local/testtool/playground/sandbox envs
@@ -334,8 +334,8 @@ requested template folder and strips the prefix before writing files to the dest
 **Template name constants in descriptors must match actual folder names** in `templates/vsc/{lang}/`,
 not legacy display names. For example, `DATemplateNames.Basic = "declarative-agent-basic"` (not `"copilot-gpt-basic"`).
 
-Built-in descriptors in `src/templates/descriptors/` register **43 templates** across 8 files:
-- DA (11), Bot (8), Tab (5), AI Agent (5), Engine Agent (4), Connector (1), Message Extension (6), OpenAPI (3)
+Built-in descriptors in `src/templates/descriptors/` register **24 templates** across 8 files:
+- DA (11), Bot (1), Tab (1), AI Agent (3), Engine Agent (3), Connector (1), Message Extension (1), OpenAPI (3)
 - All registered via `registerBuiltinTemplates()` in `descriptors/index.ts`
 - OpenAPI descriptors use `makeOpenApiScaffoldFn()` from `templates/openApi/` with a pluggable `SpecParserAdapter`
 - `createSpecParserAdapter()` returns `RealSpecParserAdapter` backed by the inline `specParser/` module

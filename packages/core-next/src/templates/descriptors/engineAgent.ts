@@ -13,7 +13,6 @@ import { type TemplateInfo, convertToLangKey } from "../scaffold/types";
 export const EngineAgentTemplateNames = {
   Basic: "basic-custom-engine-agent",
   FunctionCalling: "weather-agent",
-  MultiAgent: "travel-agent",
   TeamsCollaborator: "teams-collaborator-agent",
 } as const;
 
@@ -62,15 +61,6 @@ export const engineAgentTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript", "python", "csharp"],
     scaffoldFn: makeEngineAgentScaffoldFn(EngineAgentTemplateNames.FunctionCalling),
     displayOrder: 2,
-  },
-  {
-    id: "engine-agent/multi-agent",
-    name: "Multi-Agent Orchestration",
-    description: "Multiple custom engine agents working together",
-    category: "custom-engine-agent",
-    languages: ["csharp"],
-    scaffoldFn: makeEngineAgentScaffoldFn(EngineAgentTemplateNames.MultiAgent),
-    displayOrder: 3,
   },
   {
     id: "engine-agent/teams-collaborator",
