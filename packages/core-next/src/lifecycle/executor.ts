@@ -6,6 +6,7 @@ import type { AtkContext } from "../core/context";
 import type { AtkError } from "../core/error";
 import { userError } from "../core/error";
 import { driverRegistry } from "../drivers/registry";
+import type { DriverOutput } from "../drivers/types";
 import type {
   DriverStep,
   LifecycleName,
@@ -88,7 +89,27 @@ export async function executeLifecycle(
     ctx.logger.info(`[lifecycle] Step ${i + 1}/${steps.length}: ${stepLabel}`);
     await progress?.onStepStart(i, stepLabel);
 
-    const result = await driver.executeFn(ctx, resolvedConfig);
+    // Temporarily sync envMap into process.env so that drivers which load
+    // external files (e.g. ARM parameter JSON) can resolve ${{VAR}} placeholders
+    // produced by earlier lifecycle steps.  Only set vars that are not already
+    // present in process.env to avoid overwriting real environment values.
+    const injectedKeys: string[] = [];
+    for (const [k, v] of envMap) {
+      if (process.env[k] === undefined) {
+        process.env[k] = v;
+        injectedKeys.push(k);
+      }
+    }
+
+    let result: Result<DriverOutput, AtkError>;
+    try {
+      result = await driver.executeFn(ctx, resolvedConfig);
+    } finally {
+      // Clean up injected vars to avoid leaking state between steps
+      for (const k of injectedKeys) {
+        delete process.env[k];
+      }
+    }
 
     const durationMs = Date.now() - stepStart;
 

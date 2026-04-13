@@ -100,8 +100,19 @@ function formatZodError(driverId: string, zodError: ZodError): AtkError {
 
 /**
  * Wrap an unexpected exception into a system AtkError.
+ * If the thrown value is already an AtkError (plain object with code/message/kind),
+ * return it directly instead of wrapping into "[object Object]".
  */
 function wrapUnexpectedError(driverId: string, error: unknown): AtkError {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    typeof (error as AtkError).code === "string" &&
+    typeof (error as AtkError).message === "string" &&
+    ((error as AtkError).kind === "user" || (error as AtkError).kind === "system")
+  ) {
+    return error as AtkError;
+  }
   const message = error instanceof Error ? error.message : String(error);
   return {
     code: "DriverExecutionError",

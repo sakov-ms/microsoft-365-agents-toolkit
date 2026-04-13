@@ -9,6 +9,7 @@ import { createDriver } from "../../createDriver";
 import { systemError, userError } from "../../../core/error";
 import { GraphApiClient } from "../../../clients/graphApi/client";
 import { graphScopes, AADApplication } from "../../../clients/graphApi/types";
+import { resolveEnvPlaceholders } from "../../../manifest/resolve";
 
 const inputSchema = z.object({
   /**
@@ -56,10 +57,22 @@ export const updateAadAppDriver = createDriver({
       );
     }
 
+    // Resolve ${{VAR}} env placeholders before parsing JSON
+    const { content: resolvedContent, unresolved } = resolveEnvPlaceholders(manifestContent);
+    if (unresolved.length > 0) {
+      return err(
+        userError(
+          "UnresolvedManifestVars",
+          `AAD manifest has unresolved env variables: ${unresolved.map((u) => u.name).join(", ")}`,
+          { source }
+        )
+      );
+    }
+
     // Parse manifest
     let manifest: AADApplication;
     try {
-      manifest = JSON.parse(manifestContent);
+      manifest = JSON.parse(resolvedContent);
     } catch {
       return err(
         userError("InvalidManifestJson", `Invalid JSON in AAD manifest: ${manifestFullPath}`, {
