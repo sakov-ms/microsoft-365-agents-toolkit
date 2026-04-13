@@ -166,7 +166,7 @@ describe("teamsApp drivers", () => {
 
       // Then validate it
       const result = await validateAppPackageDriver.executeFn(ctx, {
-        packagePath: outputZip,
+        appPackagePath: outputZip,
       });
 
       expect(result.isOk()).to.be.true;
@@ -178,7 +178,7 @@ describe("teamsApp drivers", () => {
     it("should return error for missing package", async () => {
       const ctx = createMockContext();
       const result = await validateAppPackageDriver.executeFn(ctx, {
-        packagePath: "/nonexistent/package.zip",
+        appPackagePath: "/nonexistent/package.zip",
       });
       expect(result.isErr()).to.be.true;
     });
@@ -192,7 +192,7 @@ describe("teamsApp drivers", () => {
 
       const ctx = createMockContext();
       const result = await validateAppPackageDriver.executeFn(ctx, {
-        packagePath: zipPath,
+        appPackagePath: zipPath,
       });
 
       expect(result.isOk()).to.be.true;

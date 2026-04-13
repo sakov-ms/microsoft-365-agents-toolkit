@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import * as fs from "fs";
+import * as path from "path";
 import AdmZip from "adm-zip";
 import { z } from "zod";
 import { ok, err } from "neverthrow";
@@ -11,7 +12,7 @@ import { userError, systemError } from "../../../core/error";
 
 const inputSchema = z.object({
   /** Path to the .zip app package to validate */
-  packagePath: z.string().min(1),
+  appPackagePath: z.string().min(1),
 });
 
 /**
@@ -27,19 +28,25 @@ export const validateAppPackageDriver = createDriver({
   id: "teamsApp/validateAppPackage",
   name: "Validate App Package",
   inputSchema,
-  execute: async (_ctx, config) => {
+  execute: async (ctx, config) => {
+    // Resolve relative paths against project root (YAML paths are project-relative).
+    // ATK convention: CWD is the project root; fall back to process.cwd().
+    const absPackagePath = path.isAbsolute(config.appPackagePath)
+      ? config.appPackagePath
+      : path.resolve(ctx.projectPath ?? process.cwd(), config.appPackagePath);
+
     try {
-      await fs.promises.access(config.packagePath);
+      await fs.promises.access(absPackagePath);
     } catch {
       return err(
-        userError("PackageNotFound", `App package not found: ${config.packagePath}`, {
+        userError("PackageNotFound", `App package not found: ${config.appPackagePath}`, {
           source: "teamsApp/validateAppPackage",
         })
       );
     }
 
     try {
-      const zip = new AdmZip(config.packagePath);
+      const zip = new AdmZip(absPackagePath);
       const manifestEntry = zip.getEntry("manifest.json");
       if (!manifestEntry) {
         return ok({

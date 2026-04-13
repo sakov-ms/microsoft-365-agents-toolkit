@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { ok, err } from "neverthrow";
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import AdmZip from "adm-zip";
 import { createDriver } from "../../createDriver";
 import { userError, systemError } from "../../../core/error";
@@ -33,10 +34,16 @@ export const configureTeamsAppDriver = createDriver({
   name: "Configure Teams App",
   inputSchema,
   execute: async (ctx, config) => {
+    // Resolve relative paths against project root (YAML paths are project-relative).
+    // ATK convention: CWD is the project root; fall back to process.cwd().
+    const absPackagePath = path.isAbsolute(config.appPackagePath)
+      ? config.appPackagePath
+      : path.resolve(ctx.projectPath ?? process.cwd(), config.appPackagePath);
+
     // Read the app package directly (no separate existence check to avoid TOCTOU race)
     let archivedFile: Buffer;
     try {
-      archivedFile = Buffer.from(await fs.readFile(config.appPackagePath));
+      archivedFile = Buffer.from(await fs.readFile(absPackagePath));
     } catch (e: unknown) {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") {
         return err(

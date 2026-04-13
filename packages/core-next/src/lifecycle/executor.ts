@@ -122,13 +122,22 @@ export async function executeLifecycle(
     const outputs = result.value.outputs;
 
     // Write driver outputs to environment map.
-    // Drivers may key their outputs by the camelCase YAML name (e.g. "teamsAppId")
-    // or by the UPPER_CASE env-var name (e.g. "TEAMS_APP_ID"). Accept both.
     if (step.writeToEnvironmentFile && outputs) {
+      // When writeToEnvironmentFile is specified, map camelCase YAML keys to
+      // UPPER_CASE env-var names. Drivers may key their outputs by either form.
       for (const [yamlKey, envVarName] of Object.entries(step.writeToEnvironmentFile)) {
         const outputValue = outputs[yamlKey] ?? outputs[envVarName];
         if (outputValue !== undefined) {
           envMap.set(envVarName, outputValue);
+        }
+      }
+    } else if (outputs) {
+      // No writeToEnvironmentFile — write all outputs directly to envMap.
+      // This is the common case for drivers like arm/deploy that produce
+      // uppercase environment variable names as output keys.
+      for (const [key, value] of Object.entries(outputs)) {
+        if (value !== undefined) {
+          envMap.set(key, value);
         }
       }
     }
