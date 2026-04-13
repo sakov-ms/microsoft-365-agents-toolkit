@@ -18,6 +18,11 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 > Connector (1), Message Extension (1), OpenAPI (3). Registered via `registerBuiltinTemplates()`.
 > Descriptors support `questions?: QuestionSpec[]` for template-specific prompts (e.g., LLM
 > provider selection for AI agents, graph connector config for connectors).
+> Descriptors support `testable?: boolean` (defaults to `true`). Set `testable: false` for
+> templates that cannot be E2E-tested automatically (e.g., require interactive input or lack
+> required artifacts). Currently 4 descriptors are `testable: false`:
+> - `da/api-plugin-from-spec`, `ai-agent/rag-from-spec`, `me/from-spec` — require interactive `apiSpecPath` input
+> - `da/graph-connector` — template artifact lacks `appPackage/manifest.json`
 > OpenAPI descriptors use `makeOpenApiScaffoldFn()` with a `RealSpecParserAdapter` backed
 > by the inline `specParser/` module (parse, validate, filter, optimize OpenAPI specs).
 > Dependencies: `@apidevtools/swagger-parser ^10.1.1`, `swagger2openapi 7.0.8` (exact pin).

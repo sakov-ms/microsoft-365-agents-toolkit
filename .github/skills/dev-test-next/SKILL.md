@@ -219,6 +219,9 @@ tests/e2e/
 **Key design decisions:**
 - **Programmatic API primary** — tests call `runOperation(provisionOp, ctx, input)` directly, not subprocesses
 - **Data-driven** — `templateRegistry.list()` generates tests; new templates get E2E coverage automatically
+- **Lifecycle-aware** — tests read `m365agents.yml` once and detect which lifecycle sections (`provision:`, `deploy:`) exist; templates without a YAML or without the relevant section skip those phases gracefully
+- **Env bootstrapping** — provision phase always ensures `env/` dir + `.env.dev` with required vars (TEAMS_APP_ID, APP_NAME_SUFFIX) exist before lifecycle execution
+- **`testable` filtering** — templates with `testable: false` in their descriptor are excluded from E2E generation (e.g., OpenAPI templates needing interactive input, graph-connector missing manifest)
 - **Tag-based cleanup** — Azure RGs tagged with `atk-test`, `test-run-id`, `created-at` for reliable sweep
 - **Checkpoint retry** — on Mocha retry, completed phases (scaffold, create-rg) are skipped
 - **Telemetry verification** — `verifyTelemetry()` runs 6 contract rules after each test

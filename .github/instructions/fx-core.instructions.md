@@ -282,7 +282,7 @@ Key patterns:
 The lifecycle engine in `src/lifecycle/` replaces the ad-hoc YAML action dispatch in fx-core:
 1. `parseProjectYaml()` — reads `m365agents.yml` into a `RawProjectModel`
 2. `resolveLifecycle()` — matches each action to a registered driver via `DriverRegistry`
-3. `executeLifecycle()` — runs resolved actions in sequence, collecting results; accepts optional `LifecycleProgress` callbacks. Auto-injects `ctx.projectPath` into envMap as `PROJECT_PATH` if not already present (needed by drivers like `teamsApp/zipAppPackage`)
+3. `executeLifecycle()` — runs resolved actions in sequence, collecting results; accepts optional `LifecycleProgress` callbacks. Auto-injects `ctx.projectPath` into envMap as `PROJECT_PATH` if not already present (needed by drivers like `teamsApp/zipAppPackage`). **Before each driver call**, temporarily syncs envMap entries into `process.env` so drivers loading external files (ARM parameter JSON, AAD manifest templates) can resolve `${{VAR}}` placeholders produced by earlier steps. Injected vars are cleaned up in a `finally` block to avoid leaking state between steps.
 
 ### Lifecycle Operations
 
@@ -446,7 +446,7 @@ Key patterns:
 - Creates a `DriverDescriptor` with automatic Zod pre-validation, telemetry, and error normalization
 - Signature: `createDriver<TConfig>({ id, name, inputSchema, execute, rollback? })`
 - Validates config against the Zod schema before calling `execute()` — returns `InvalidDriverInput` error on failure
-- Wraps unexpected thrown exceptions into `DriverExecutionError` system errors
+- Wraps unexpected thrown exceptions into `DriverExecutionError` system errors; recognizes `AtkError` plain objects (with `code`/`message`/`kind` properties) and returns them directly instead of wrapping — prevents `[object Object]` serialization
 - Sends `driver-start` / `driver-end` telemetry events with duration measurement
 - Also generates `validateFn` for preflight validation without execution
 
@@ -466,7 +466,7 @@ Key patterns:
 | `teamsApp/publishAppPackage` | `builtin/teamsApp/publishAppPackage.ts` | Publishes/updates app in org app catalog |
 | `teamsApp/extendToM365` | `builtin/teamsApp/extendToM365.ts` | Sideloads app to M365 ecosystem via PackageService (V1 classic, V2 DA) |
 | `aadApp/create` | `builtin/aadApp/create.ts` | Creates Entra ID (Azure AD) app registration via MS Graph |
-| `aadApp/update` | `builtin/aadApp/update.ts` | Updates Entra ID app properties (redirect URIs, identifier URIs, etc.) |
+| `aadApp/update` | `builtin/aadApp/update.ts` | Updates Entra ID app properties (redirect URIs, identifier URIs, etc.); resolves `${{VAR}}` env placeholders in AAD manifest before parsing |
 | `botAadApp/create` | `builtin/botAadApp/create.ts` | Creates bot-specific Entra ID app with password credential |
 | `botFramework/create` | `builtin/botFramework/create.ts` | Registers bot channel in Bot Framework via ARM |
 | `arm/deploy` | `builtin/arm/deploy.ts` | Deploys ARM/Bicep templates via Azure Resource Manager |
@@ -481,7 +481,7 @@ Key patterns:
 **Key design decisions vs fx-core:**
 - Zod pre-validation before execution (fx-core validated late or not at all)
 - No TypeDI `@Service()` decorators — plain `createDriver()` factory + `driverRegistry.register()`
-- No `process.env` side effects — drivers return outputs for the lifecycle executor to write
+- Controlled `process.env` sync — executor temporarily injects envMap into `process.env` before each driver call (for drivers loading external files with `${{VAR}}` placeholders), then cleans up in `finally`; drivers themselves return outputs for the executor to write
 - No external deps for file I/O — uses Node.js built-ins instead of `dotenv`, `fs-extra`, `comment-json`
 - Driver IDs match fx-core naming (`file/createOrUpdateEnvironmentFile`, `script`) for YAML backward compatibility
 
