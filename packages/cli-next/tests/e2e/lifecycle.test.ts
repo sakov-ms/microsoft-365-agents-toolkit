@@ -109,7 +109,9 @@ function getTestFolder(): string {
 }
 
 function getUniqueAppName(): string {
-  return "atkE2E" + Date.now().toString() + uuidv4().slice(0, 2);
+  // "atkE2E" (6) + base36 timestamp (~9) + uuid (2) ≤ 17 chars
+  // Must stay ≤ 20 to satisfy ARM resourceBaseName maxLength.
+  return "atkE2E" + Date.now().toString(36) + uuidv4().slice(0, 2);
 }
 
 async function loadEnvMap(projectPath: string, envName: string): Promise<Map<string, string>> {
@@ -259,6 +261,11 @@ for (const template of templates) {
               let content = fs.existsSync(envFilePath) ? fs.readFileSync(envFilePath, "utf-8") : "";
               content = upsertEnvVar(content, "AZURE_RESOURCE_GROUP_NAME", rgName);
               content = upsertEnvVar(content, "AZURE_SUBSCRIPTION_ID", cfg.azureSubscriptionId);
+
+              // Ensure RESOURCE_SUFFIX is a short value (6 chars) so that
+              // resourceBaseName (prefix + suffix) stays within the ARM
+              // template's maxLength:20 constraint.
+              content = upsertEnvVar(content, "RESOURCE_SUFFIX", uuidv4().slice(0, 6));
 
               // Pre-populate unresolved ${{VAR}} placeholders found in ARM
               // parameter files (e.g. SECRET_API_KEY, AZURE_SEARCH_ENDPOINT).
