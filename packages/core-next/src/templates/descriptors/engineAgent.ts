@@ -17,6 +17,14 @@ export const EngineAgentTemplateNames = {
 } as const;
 
 /**
+ * csharp fallback zips use different folder names for some templates.
+ * Map (base template name, language) → actual zip folder name.
+ */
+const csharpTemplateNameOverrides: Record<string, string> = {
+  [EngineAgentTemplateNames.FunctionCalling]: "custom-copilot-weather-agent",
+};
+
+/**
  * Create a standard scaffold function for Custom Engine Agent templates.
  */
 function makeEngineAgentScaffoldFn(templateName: string) {
@@ -26,8 +34,13 @@ function makeEngineAgentScaffoldFn(templateName: string) {
       ...opts,
     });
 
+    const effectiveName =
+      opts.language === "csharp"
+        ? csharpTemplateNameOverrides[templateName] ?? templateName
+        : templateName;
+
     const tplInfo: TemplateInfo = {
-      templateName,
+      templateName: effectiveName,
       language: convertToLangKey(opts.language),
       replaceMap,
     };

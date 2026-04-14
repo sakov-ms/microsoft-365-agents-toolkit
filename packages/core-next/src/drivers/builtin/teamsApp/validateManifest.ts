@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
+import * as path from "node:path";
 import { z } from "zod";
 import { ok, err } from "neverthrow";
 import { createDriver } from "../../createDriver";
@@ -23,8 +24,11 @@ export const validateManifestDriver = createDriver({
   id: "teamsApp/validateManifest",
   name: "Validate Manifest",
   inputSchema,
-  execute: async (_ctx, config) => {
-    const result = await validateManifestSchema(config.manifestPath);
+  execute: async (ctx, config) => {
+    const manifestPath = path.isAbsolute(config.manifestPath)
+      ? config.manifestPath
+      : path.resolve(ctx.projectPath ?? process.cwd(), config.manifestPath);
+    const result = await validateManifestSchema(manifestPath);
     if (result.isErr()) return err(result.error);
 
     const { errors } = result.value;

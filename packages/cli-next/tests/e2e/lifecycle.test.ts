@@ -63,6 +63,43 @@ function upsertEnvVar(content: string, key: string, value: string): string {
   return content.trimEnd() + `\n${key}=${value}\n`;
 }
 
+/** Regex matching ${{VAR_NAME}} placeholders (non-greedy). */
+const ENV_PLACEHOLDER_RE = /\$\{\{([^}]+)\}\}/g;
+
+/**
+ * Scan ARM parameter files (infra/*.parameters.json) for ${{VAR}} placeholders
+ * that are not yet defined in the env content. Returns a map of var name →
+ * dummy value for all unresolved external variables.
+ *
+ * Variables populated by lifecycle drivers (e.g. TEAMS_APP_ID, BOT_*)
+ * are excluded — only "external" variables (secrets, endpoints, etc.)
+ * that no driver produces need test dummy values.
+ */
+function collectUnresolvedParameterVars(
+  projectPath: string,
+  envContent: string
+): Map<string, string> {
+  const infraDir = path.join(projectPath, "infra");
+  if (!fs.existsSync(infraDir)) return new Map();
+
+  const vars = new Map<string, string>();
+  const files = fs.readdirSync(infraDir).filter((f: string) => f.endsWith(".parameters.json"));
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(infraDir, file), "utf-8");
+    let match: RegExpExecArray | null;
+    const re = new RegExp(ENV_PLACEHOLDER_RE.source, "g");
+    while ((match = re.exec(content)) !== null) {
+      const varName = match[1];
+      // Skip vars already defined in env file with a non-empty value
+      const envLineRe = new RegExp(`^${varName}=(.+)$`, "m");
+      if (envLineRe.test(envContent)) continue;
+      // Use a descriptive dummy value
+      vars.set(varName, `test-placeholder-${varName.toLowerCase()}`);
+    }
+  }
+  return vars;
+}
+
 function getTestFolder(): string {
   const folder = path.resolve(os.homedir(), "atk-e2e-tests");
   if (!fs.existsSync(folder)) {
@@ -169,6 +206,8 @@ for (const template of templates) {
               projectName: appName,
               language: lang,
               destinationPath: getTestFolder(),
+              // Default LLM service so Mustache conditionals render correctly
+              options: { llmService: "azure-openai" },
             });
             expect(result.isOk(), `scaffold failed: ${result.isErr() ? result.error.message : ""}`)
               .to.be.true;
@@ -220,6 +259,16 @@ for (const template of templates) {
               let content = fs.existsSync(envFilePath) ? fs.readFileSync(envFilePath, "utf-8") : "";
               content = upsertEnvVar(content, "AZURE_RESOURCE_GROUP_NAME", rgName);
               content = upsertEnvVar(content, "AZURE_SUBSCRIPTION_ID", cfg.azureSubscriptionId);
+
+              // Pre-populate unresolved ${{VAR}} placeholders found in ARM
+              // parameter files (e.g. SECRET_API_KEY, AZURE_SEARCH_ENDPOINT).
+              // Without this, the arm/deploy driver rejects parameters.json
+              // containing unresolved variables.
+              const unresolvedVars = collectUnresolvedParameterVars(projectPath, content);
+              for (const [varName, dummyValue] of unresolvedVars) {
+                content = upsertEnvVar(content, varName, dummyValue);
+              }
+
               fs.writeFileSync(envFilePath, content);
 
               const result = await runOperation(provisionOp, ctx, {
