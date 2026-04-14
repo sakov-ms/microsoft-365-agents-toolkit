@@ -23,6 +23,7 @@ import { apiKeyRegisterDriver } from "./apiKey/register";
 import { updateTeamsAppDriver } from "./teamsApp/update";
 import { extendToM365Driver } from "./teamsApp/extendToM365";
 import { runNpmCommandDriver } from "./cli/runNpmCommand";
+import { runDotnetCommandDriver } from "./cli/runDotnetCommand";
 
 /** All built-in driver descriptors */
 export const builtinDrivers = [
@@ -47,6 +48,7 @@ export const builtinDrivers = [
   updateTeamsAppDriver,
   extendToM365Driver,
   runNpmCommandDriver,
+  runDotnetCommandDriver,
 ] as const;
 
 /**

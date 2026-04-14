@@ -62,8 +62,8 @@ describe("Azure Infrastructure Drivers", () => {
   // ── Registration ──────────────────────────────────────────────────────
 
   describe("registration", () => {
-    it("all 21 builtin drivers are registered", () => {
-      expect(builtinDrivers).to.have.lengthOf(21);
+    it("all 22 builtin drivers are registered", () => {
+      expect(builtinDrivers).to.have.lengthOf(22);
     });
 
     it("arm/deploy is in builtinDrivers", () => {

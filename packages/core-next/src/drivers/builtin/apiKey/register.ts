@@ -3,6 +3,9 @@
 
 import { z } from "zod";
 import { ok, err } from "neverthrow";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import * as yaml from "js-yaml";
 import { createDriver } from "../../createDriver";
 import { systemError, userError } from "../../../core/error";
 import { TeamsDevPortalClient } from "../../../clients/teamsDevPortal/client";
@@ -37,8 +40,10 @@ const inputSchema = z.object({
   primaryClientSecret: secretSchema.optional(),
   /** Secondary client secret (10-512 chars) */
   secondaryClientSecret: secretSchema.optional(),
-  /** Base URL of the API (HTTPS required) */
-  baseUrl: httpsUrl,
+  /** Base URL of the API (HTTPS required) — optional when apiSpecPath is provided */
+  baseUrl: httpsUrl.optional(),
+  /** Path to OpenAPI spec file — used to derive domain when baseUrl is absent */
+  apiSpecPath: z.string().optional(),
   /** Who can use this registration */
   applicableToApps: z.nativeEnum(ApiSecretRegistrationAppType).optional(),
   /** Tenant audience */
@@ -46,6 +51,41 @@ const inputSchema = z.object({
   /** Existing registration ID for idempotency */
   existingRegistrationId: z.string().optional(),
 });
+
+/**
+ * Resolve `${{VAR}}` env-var placeholders using process.env.
+ */
+function resolveEnvPlaceholders(value: string): string {
+  return value.replace(/\$\{\{([^}]+)\}\}/g, (_match, name: string) => {
+    return process.env[name] ?? "";
+  });
+}
+
+/**
+ * Extract server base URLs from an OpenAPI spec file.
+ * Returns an array of resolved, HTTPS-only origin URLs.
+ */
+async function extractDomainsFromSpec(specPath: string, projectPath: string): Promise<string[]> {
+  const absPath = path.isAbsolute(specPath) ? specPath : path.resolve(projectPath, specPath);
+  const raw = await fs.readFile(absPath, "utf-8");
+  const spec = (absPath.endsWith(".json") ? JSON.parse(raw) : yaml.load(raw)) as {
+    servers?: Array<{ url?: string }>;
+  };
+  if (!spec?.servers?.length) return [];
+
+  return spec.servers
+    .map((s) => {
+      if (!s.url) return "";
+      const resolved = resolveEnvPlaceholders(s.url);
+      try {
+        const u = new URL(resolved);
+        return u.protocol === "https:" ? u.origin : "";
+      } catch {
+        return "";
+      }
+    })
+    .filter(Boolean);
+}
 
 /**
  * Driver: apiKey/register
@@ -129,13 +169,40 @@ export const apiKeyRegisterDriver = createDriver({
       );
     }
 
+    // Resolve domain: prefer explicit baseUrl, fall back to apiSpecPath parsing
+    let domains: string[] = [];
+    if (config.baseUrl) {
+      domains = [config.baseUrl];
+    } else if (config.apiSpecPath) {
+      try {
+        domains = await extractDomainsFromSpec(
+          config.apiSpecPath,
+          ctx.projectPath ?? process.cwd()
+        );
+      } catch (e) {
+        ctx.logger.warning(
+          `[${source}] Failed to extract domains from spec: ${config.apiSpecPath}`
+        );
+      }
+    }
+
+    if (domains.length === 0) {
+      return err(
+        userError(
+          "MissingBaseUrl",
+          "Either baseUrl or apiSpecPath (with valid server URLs) is required",
+          { source }
+        )
+      );
+    }
+
     // Build the registration payload
     const applicableToApps = config.applicableToApps ?? ApiSecretRegistrationAppType.AnyApp;
     const targetAudience = config.targetAudience ?? ApiSecretRegistrationTargetAudience.AnyTenant;
 
     const registration: ApiSecretRegistration = {
       description: config.name,
-      targetUrlsShouldStartWith: [config.baseUrl],
+      targetUrlsShouldStartWith: domains,
       applicableToApps,
       specificAppId:
         applicableToApps === ApiSecretRegistrationAppType.SpecificApp ? config.appId : "",

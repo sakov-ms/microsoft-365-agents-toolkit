@@ -64,7 +64,7 @@ describe("teamsApp drivers", () => {
 
   describe("registration", () => {
     it("should include all 13 drivers in builtinDrivers", () => {
-      expect(builtinDrivers).to.have.lengthOf(21);
+      expect(builtinDrivers).to.have.lengthOf(22);
     });
 
     it("should include teamsApp driver IDs", () => {
@@ -79,7 +79,7 @@ describe("teamsApp drivers", () => {
       for (const driver of builtinDrivers) {
         registry.register(driver);
       }
-      expect(registry.size).to.equal(21);
+      expect(registry.size).to.equal(22);
       expect(registry.has("teamsApp/zipAppPackage")).to.be.true;
       expect(registry.has("teamsApp/validateManifest")).to.be.true;
       expect(registry.has("teamsApp/validateAppPackage")).to.be.true;

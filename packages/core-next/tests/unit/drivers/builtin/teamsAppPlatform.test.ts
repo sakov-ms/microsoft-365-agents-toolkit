@@ -79,7 +79,7 @@ describe("teamsApp platform drivers", () => {
       expect(publishAppPackageDriver.id).to.equal("teamsApp/publishAppPackage");
     });
 
-    it("all 21 builtin drivers are registered", () => {
+    it("all 22 builtin drivers are registered", () => {
       registerBuiltinDrivers();
       const ids = ["teamsApp/create", "teamsApp/configure", "teamsApp/publishAppPackage"];
       for (const id of ids) {

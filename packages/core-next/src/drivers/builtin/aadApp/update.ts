@@ -8,8 +8,96 @@ import * as path from "node:path";
 import { createDriver } from "../../createDriver";
 import { systemError, userError } from "../../../core/error";
 import { GraphApiClient } from "../../../clients/graphApi/client";
-import { graphScopes, AADApplication } from "../../../clients/graphApi/types";
+import {
+  graphScopes,
+  AADApplication,
+  RequiredResourceAccess,
+} from "../../../clients/graphApi/types";
 import { resolveEnvPlaceholders } from "../../../manifest/resolve";
+import * as permissionListJson from "./permissions.json";
+
+/**
+ * UUID v4 regex — used to detect whether a string is already a GUID.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+interface PermissionEntry {
+  id: string; // e.g. "f431331c-…"
+  value: string; // e.g. "ExternalConnection.ReadWrite.OwnedBy"
+}
+
+interface ServicePrincipalJson {
+  appId: string;
+  displayName: string;
+  appRoles: PermissionEntry[];
+  oauth2PermissionScopes: PermissionEntry[];
+}
+
+interface PermissionMap {
+  [appIdOrName: string]: {
+    id: string;
+    roles: Record<string, string>; // friendly-name → GUID
+    scopes: Record<string, string>; // friendly-name → GUID
+  };
+}
+
+let cachedPermissionMap: PermissionMap | null = null;
+
+/**
+ * Build a map from service-principal display-names and appIds to their
+ * role/scope name→GUID mappings.  Matches fx-core's getPermissionMap().
+ */
+function getPermissionMap(): PermissionMap {
+  if (cachedPermissionMap) return cachedPermissionMap;
+  const list = permissionListJson as { value: ServicePrincipalJson[] };
+  const map: PermissionMap = {};
+  for (const sp of list.value) {
+    const entry = {
+      id: sp.appId,
+      roles: {} as Record<string, string>,
+      scopes: {} as Record<string, string>,
+    };
+    for (const r of sp.appRoles) {
+      entry.roles[r.value] = r.id;
+    }
+    for (const s of sp.oauth2PermissionScopes) {
+      entry.scopes[s.value] = s.id;
+    }
+    map[sp.appId] = entry;
+    map[sp.displayName] = entry;
+  }
+  cachedPermissionMap = map;
+  return map;
+}
+
+/**
+ * Resolve friendly permission names (e.g. "Microsoft Graph",
+ * "ExternalConnection.ReadWrite.OwnedBy") to their GUID equivalents
+ * in-place, matching fx-core's processRequiredResourceAccessInManifest().
+ */
+function resolvePermissionNames(rra: RequiredResourceAccess[]): void {
+  const map = getPermissionMap();
+  for (const item of rra) {
+    // Resolve resourceAppId (e.g. "Microsoft Graph" → "00000003-…")
+    if (!UUID_RE.test(item.resourceAppId)) {
+      const entry = map[item.resourceAppId];
+      if (entry) {
+        item.resourceAppId = entry.id;
+      }
+    }
+    // Resolve each resourceAccess.id
+    const entry = map[item.resourceAppId];
+    if (!entry) continue;
+    for (const ra of item.resourceAccess) {
+      if (!UUID_RE.test(ra.id)) {
+        const resolved = ra.type === "Scope" ? entry.scopes[ra.id] : entry.roles[ra.id];
+        if (resolved) {
+          ra.id = resolved;
+        }
+      }
+    }
+  }
+}
 
 const inputSchema = z.object({
   /**
@@ -89,6 +177,12 @@ export const updateAadAppDriver = createDriver({
           source,
         })
       );
+    }
+
+    // Resolve friendly permission names to GUIDs (e.g. "Microsoft Graph" → appId,
+    // "ExternalConnection.ReadWrite.OwnedBy" → role GUID).  Matches fx-core behaviour.
+    if (manifest.requiredResourceAccess?.length) {
+      resolvePermissionNames(manifest.requiredResourceAccess);
     }
 
     // Write resolved manifest to output path

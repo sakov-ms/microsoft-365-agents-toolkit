@@ -91,8 +91,8 @@ describe("Entra/Bot drivers", () => {
       expect(registry.has("botFramework/create")).to.be.true;
     });
 
-    it("all 21 builtin drivers are registered", () => {
-      expect(builtinDrivers).to.have.lengthOf(21);
+    it("all 22 builtin drivers are registered", () => {
+      expect(builtinDrivers).to.have.lengthOf(22);
     });
   });
 

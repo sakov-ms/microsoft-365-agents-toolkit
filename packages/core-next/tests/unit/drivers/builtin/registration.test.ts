@@ -10,7 +10,7 @@ import { builtinDrivers, registerBuiltinDrivers } from "../../../../src/drivers/
 
 describe("registerBuiltinDrivers", () => {
   it("should export the expected number of built-in drivers", () => {
-    expect(builtinDrivers).to.have.lengthOf(21);
+    expect(builtinDrivers).to.have.lengthOf(22);
   });
 
   it("should have correct driver IDs", () => {
@@ -26,7 +26,7 @@ describe("registerBuiltinDrivers", () => {
     for (const driver of builtinDrivers) {
       registry.register(driver);
     }
-    expect(registry.size).to.equal(21);
+    expect(registry.size).to.equal(22);
     expect(registry.has("file/createOrUpdateEnvironmentFile")).to.be.true;
     expect(registry.has("file/createOrUpdateJsonFile")).to.be.true;
     expect(registry.has("script")).to.be.true;

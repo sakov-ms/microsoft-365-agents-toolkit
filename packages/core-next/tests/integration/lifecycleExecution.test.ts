@@ -38,8 +38,8 @@ describe("Integration: Lifecycle execution with real drivers", () => {
     sandbox.restore();
   });
 
-  it("should register all 21 builtin drivers", () => {
-    expect(builtinDrivers).to.have.lengthOf(21);
+  it("should register all 22 builtin drivers", () => {
+    expect(builtinDrivers).to.have.lengthOf(22);
     for (const d of builtinDrivers) {
       expect(driverRegistry.get(d.id)).to.not.be.undefined;
     }

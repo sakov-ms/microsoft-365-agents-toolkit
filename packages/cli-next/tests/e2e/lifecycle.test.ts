@@ -93,8 +93,12 @@ function collectUnresolvedParameterVars(
       // Skip vars already defined in env file with a non-empty value
       const envLineRe = new RegExp(`^${varName}=(.+)$`, "m");
       if (envLineRe.test(envContent)) continue;
-      // Use a descriptive dummy value
-      vars.set(varName, `test-placeholder-${varName.toLowerCase()}`);
+      // Use a descriptive dummy value; password vars need complexity for Azure SQL etc.
+      if (/password/i.test(varName)) {
+        vars.set(varName, "Tst!Pa55w0rd#E2E");
+      } else {
+        vars.set(varName, `test-placeholder-${varName.toLowerCase()}`);
+      }
     }
   }
   return vars;
@@ -163,6 +167,17 @@ function yamlNeedsAzure(yamlContent: string): boolean {
 
 const templates = templateRegistry.list().filter((t) => t.testable !== false);
 
+/**
+ * Per-template scaffold option overrides for E2E tests.
+ * Templates that require specific auth configuration (e.g. MicrosoftEntra)
+ * need these to scaffold a testable lifecycle YAML.
+ */
+const TEMPLATE_TEST_OPTIONS: Record<string, Record<string, string>> = {
+  // Custom OAuth requires authorizationUrl/tokenUrl that are not available in
+  // E2E test environments.  Scaffold the MicrosoftEntra path instead.
+  "da/api-plugin-oauth": { authType: "microsoft-entra" },
+};
+
 if (templates.length === 0) {
   throw new Error(
     "templateRegistry is empty — registerBuiltinTemplates() may have failed. " +
@@ -209,7 +224,10 @@ for (const template of templates) {
               language: lang,
               destinationPath: getTestFolder(),
               // Default LLM service so Mustache conditionals render correctly
-              options: { llmService: "azure-openai" },
+              options: {
+                llmService: "azure-openai",
+                ...TEMPLATE_TEST_OPTIONS[template.id],
+              },
             });
             expect(result.isOk(), `scaffold failed: ${result.isErr() ? result.error.message : ""}`)
               .to.be.true;
