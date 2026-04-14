@@ -7,6 +7,9 @@ import { expect } from "chai";
 import { describe, it, beforeEach, afterEach } from "mocha";
 import * as sinon from "sinon";
 import axios from "axios";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
 import { ok, err } from "neverthrow";
 import * as retryModule from "../../../../src/http/retry";
 import { createMockContext } from "../../testHelper";
@@ -269,6 +272,84 @@ describe("Auth plugin drivers (oauth + apiKey)", () => {
       const payload = mockAxios.post.firstCall.args[1];
       expect(payload.identityProvider).to.equal("MicrosoftEntra");
       expect(payload.clientSecret).to.equal("");
+    });
+
+    it("accepts config without baseUrl when apiSpecPath is provided", () => {
+      const result = oauthRegisterDriver.validateFn!({
+        name: "test-oauth",
+        appId: "app-123",
+        flow: "authorizationCode",
+        clientId: "client-123",
+        apiSpecPath: "./appPackage/apiSpecificationFile/repair.yml",
+        identityProvider: "MicrosoftEntra",
+      });
+      expect(result.isOk()).to.be.true;
+    });
+
+    it("derives domain from apiSpecPath when baseUrl is absent", async () => {
+      const ctx = createMockContext();
+      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oauth-test-"));
+      ctx.projectPath = tmpDir;
+      (ctx.auth.m365TokenProvider as any).getAccessToken = sandbox.stub().resolves(ok(FAKE_TOKEN));
+
+      // Write a real YAML spec file with a server URL
+      const specDir = path.join(tmpDir, "appPackage", "apiSpecificationFile");
+      await fs.mkdir(specDir, { recursive: true });
+      const specContent = `
+openapi: 3.0.0
+info:
+  title: Test
+  version: 1.0.0
+servers:
+  - url: https://myserver.azurewebsites.net/api
+paths: {}
+`;
+      await fs.writeFile(path.join(specDir, "repair.yml"), specContent, "utf-8");
+
+      mockAxios.post.resolves({
+        status: 200,
+        data: {
+          configurationRegistrationId: { oAuthConfigId: "spec-derived-config" },
+          resourceIdentifierUri: "api://myserver.azurewebsites.net",
+        },
+      });
+
+      const result = await oauthRegisterDriver.executeFn(ctx, {
+        name: "test-oauth",
+        appId: "app-123",
+        flow: "authorizationCode",
+        clientId: "client-123",
+        apiSpecPath: "./appPackage/apiSpecificationFile/repair.yml",
+        identityProvider: "MicrosoftEntra",
+      });
+
+      expect(result.isOk()).to.be.true;
+      if (result.isOk()) {
+        expect(result.value.outputs.OAUTH2_CONFIGURATION_ID).to.equal("spec-derived-config");
+      }
+
+      const payload = mockAxios.post.firstCall.args[1];
+      expect(payload.targetUrlsShouldStartWith).to.deep.equal([
+        "https://myserver.azurewebsites.net",
+      ]);
+    });
+
+    it("returns MissingBaseUrl when neither baseUrl nor apiSpecPath provided", async () => {
+      const ctx = createMockContext();
+      (ctx.auth.m365TokenProvider as any).getAccessToken = sandbox.stub().resolves(ok(FAKE_TOKEN));
+
+      const result = await oauthRegisterDriver.executeFn(ctx, {
+        name: "test-oauth",
+        appId: "app-123",
+        flow: "authorizationCode",
+        clientId: "client-123",
+        identityProvider: "MicrosoftEntra",
+      });
+
+      expect(result.isErr()).to.be.true;
+      if (result.isErr()) {
+        expect(result.error.code).to.equal("MissingBaseUrl");
+      }
     });
 
     it("returns error when token acquisition fails", async () => {

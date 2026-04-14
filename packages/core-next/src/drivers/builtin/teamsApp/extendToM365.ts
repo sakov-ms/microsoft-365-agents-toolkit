@@ -86,12 +86,18 @@ export const extendToM365Driver = createDriver({
     try {
       [titleId, appId, shareLink] = await service.sideLoad(tokenRes.value, packagePath, scope);
     } catch (error: unknown) {
+      // Surface Axios response body for HTTP errors (e.g. 400)
+      let detail = error instanceof Error ? error.message : String(error);
+      const axiosData = (error as { response?: { data?: unknown } })?.response?.data;
+      if (axiosData) {
+        const body = typeof axiosData === "string" ? axiosData : JSON.stringify(axiosData);
+        detail = `${detail} — response: ${body}`;
+      }
       return err(
-        systemError(
-          "SideloadingFailed",
-          `M365 sideloading failed: ${error instanceof Error ? error.message : String(error)}`,
-          { source: "teamsApp/extendToM365", inner: error instanceof Error ? error : undefined }
-        )
+        systemError("SideloadingFailed", `M365 sideloading failed: ${detail}`, {
+          source: "teamsApp/extendToM365",
+          inner: error instanceof Error ? error : undefined,
+        })
       );
     }
 

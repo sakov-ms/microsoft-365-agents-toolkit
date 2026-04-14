@@ -3,6 +3,9 @@
 
 import { z } from "zod";
 import { ok, err } from "neverthrow";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import * as yaml from "js-yaml";
 import { createDriver } from "../../createDriver";
 import { systemError, userError } from "../../../core/error";
 import { TeamsDevPortalClient } from "../../../clients/teamsDevPortal/client";
@@ -44,8 +47,10 @@ const inputSchema = z.object({
   applicableToApps: z.nativeEnum(OauthRegistrationAppType).optional(),
   /** Tenant audience */
   targetAudience: z.nativeEnum(OauthRegistrationTargetAudience).optional(),
-  /** Base URL of the API — required */
-  baseUrl: httpsUrl,
+  /** Base URL of the API — optional when apiSpecPath is provided */
+  baseUrl: httpsUrl.optional(),
+  /** Path to OpenAPI spec file — used to derive domain when baseUrl is absent */
+  apiSpecPath: z.string().optional(),
   /** Authorization URL — required for Custom provider */
   authorizationUrl: httpsUrl.optional(),
   /** Token URL — required for Custom provider */
@@ -57,6 +62,45 @@ const inputSchema = z.object({
   /** Existing configuration ID for idempotency */
   existingConfigurationId: z.string().optional(),
 });
+
+/**
+ * Resolve `${{VAR}}` env-var placeholders using process.env.
+ * The lifecycle executor syncs envMap into process.env before each driver call.
+ */
+function resolveEnvPlaceholders(value: string): string {
+  return value.replace(/\$\{\{([^}]+)\}\}/g, (_match, name: string) => {
+    return process.env[name] ?? "";
+  });
+}
+
+/**
+ * Extract server base URLs from an OpenAPI spec file.
+ * Returns an array of resolved, HTTPS-only domain URLs.
+ * Matches fx-core behaviour: when baseUrl is absent, derive from apiSpecPath.
+ */
+async function extractDomainsFromSpec(specPath: string, projectPath: string): Promise<string[]> {
+  const absPath = path.isAbsolute(specPath) ? specPath : path.resolve(projectPath, specPath);
+  const raw = await fs.readFile(absPath, "utf-8");
+  // Support both JSON and YAML specs
+  const spec = (absPath.endsWith(".json") ? JSON.parse(raw) : yaml.load(raw)) as {
+    servers?: Array<{ url?: string }>;
+  };
+  if (!spec?.servers?.length) return [];
+
+  return spec.servers
+    .map((s) => {
+      if (!s.url) return "";
+      const resolved = resolveEnvPlaceholders(s.url);
+      try {
+        const u = new URL(resolved);
+        // Return origin only (strip path); fx-core uses base URL sans path
+        return u.protocol === "https:" ? u.origin : "";
+      } catch {
+        return "";
+      }
+    })
+    .filter(Boolean);
+}
 
 /**
  * Driver: oauth/register
@@ -123,6 +167,33 @@ export const oauthRegisterDriver = createDriver({
       }
     }
 
+    // Resolve domain: prefer explicit baseUrl, fall back to apiSpecPath parsing
+    // This matches fx-core where baseUrl is optional when apiSpecPath is provided.
+    let domains: string[] = [];
+    if (config.baseUrl) {
+      domains = [config.baseUrl];
+    } else if (config.apiSpecPath) {
+      try {
+        domains = await extractDomainsFromSpec(
+          config.apiSpecPath,
+          ctx.projectPath ?? process.cwd()
+        );
+      } catch (e: unknown) {
+        ctx.logger.warning(
+          `[${source}] Failed to extract domains from apiSpecPath: ${e instanceof Error ? e.message : String(e)}`
+        );
+      }
+    }
+    if (domains.length === 0) {
+      return err(
+        userError(
+          "MissingBaseUrl",
+          "Either baseUrl or apiSpecPath (with resolvable server URLs) is required",
+          { source }
+        )
+      );
+    }
+
     // Build the registration payload
     const applicableToApps = config.applicableToApps ?? OauthRegistrationAppType.AnyApp;
     const targetAudience = config.targetAudience ?? OauthRegistrationTargetAudience.AnyTenant;
@@ -133,7 +204,7 @@ export const oauthRegisterDriver = createDriver({
       config.identityProvider === "MicrosoftEntra"
         ? {
             description: config.name,
-            targetUrlsShouldStartWith: [config.baseUrl],
+            targetUrlsShouldStartWith: domains,
             applicableToApps,
             m365AppId:
               applicableToApps === OauthRegistrationAppType.SpecificApp ? config.appId : "",
@@ -145,7 +216,7 @@ export const oauthRegisterDriver = createDriver({
           }
         : {
             description: config.name,
-            targetUrlsShouldStartWith: [config.baseUrl],
+            targetUrlsShouldStartWith: domains,
             applicableToApps,
             m365AppId:
               applicableToApps === OauthRegistrationAppType.SpecificApp ? config.appId : "",

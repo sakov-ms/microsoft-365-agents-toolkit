@@ -100,8 +100,6 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.ActionFromScratchOAuth),
     displayOrder: 3,
-    // Template YAML missing required baseUrl field for oauth/register driver
-    testable: false,
   },
   {
     id: "da/api-plugin-bearer",
@@ -150,7 +148,8 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.MCP),
     displayOrder: 8,
     questions: [mcpServerUrlQuestion()],
-    // M365 sideloading infra issues — skip E2E lifecycle tests
+    // Template ships with empty ai-plugin.json (functions/runtimes populated
+    // when MCP server is configured) — MOS sideloading rejects empty plugins
     testable: false,
   },
   {
@@ -161,7 +160,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.MCPLocal, "common"),
     displayOrder: 9,
-    // Requires odr.exe + M365 sideloading infra — skip E2E lifecycle tests
+    // Requires odr.exe + empty ai-plugin.json (same MOS rejection as mcp-remote)
     testable: false,
   },
   {

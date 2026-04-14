@@ -114,7 +114,7 @@ describe("createDriver", () => {
       .getCalls()
       .find((c: sinon.SinonSpyCall) => c.args[0] === "driver-end");
     expect(endCall).to.exist;
-    expect(endCall!.args[1]).to.deep.equal({ driver: "test/driver" });
+    expect(endCall!.args[1]).to.deep.equal({ driver: "test/driver", success: "true" });
     expect(endCall!.args[2]).to.have.property("durationMs").that.is.a("number");
   });
 
