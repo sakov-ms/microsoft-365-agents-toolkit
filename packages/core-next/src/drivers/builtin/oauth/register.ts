@@ -109,6 +109,7 @@ async function extractDomainsFromSpec(specPath: string, projectPath: string): Pr
  *
  * Outputs:
  * - configurationId  (mapped via writeToEnvironmentFile to the template's env var name)
+ * - applicationIdUri  (MicrosoftEntra only — the resource identifier URI from TDP)
  */
 export const oauthRegisterDriver = createDriver({
   id: "oauth/register",
@@ -238,10 +239,16 @@ export const oauthRegisterDriver = createDriver({
     const configId = createRes.value.configurationRegistrationId.oAuthConfigId;
     ctx.logger.info(`[${source}] Created OAuth config: ${configId}`);
 
-    return ok({
-      outputs: {
-        configurationId: configId,
-      },
-    });
+    const outputs: Record<string, string> = {
+      configurationId: configId,
+    };
+
+    // For MicrosoftEntra, the TDP response includes a resourceIdentifierUri
+    // that must be propagated so the AAD manifest can reference it.
+    if (config.identityProvider === "MicrosoftEntra" && createRes.value.resourceIdentifierUri) {
+      outputs.applicationIdUri = createRes.value.resourceIdentifierUri;
+    }
+
+    return ok({ outputs });
   },
 });

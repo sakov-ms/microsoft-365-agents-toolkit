@@ -145,6 +145,20 @@ export const updateAadAppDriver = createDriver({
       );
     }
 
+    // Auto-generate AAD_APP_ACCESS_AS_USER_PERMISSION_ID if the manifest references
+    // it but no value exists in the environment yet.  Matches fx-core behaviour:
+    // the UUID is created once and persisted via the driver's outputs.
+    const permissionIdPlaceholder = /\$\{\{ *AAD_APP_ACCESS_AS_USER_PERMISSION_ID *\}\}/;
+    let generatedPermissionId: string | undefined;
+    if (
+      !process.env.AAD_APP_ACCESS_AS_USER_PERMISSION_ID &&
+      permissionIdPlaceholder.test(manifestContent)
+    ) {
+      const { randomUUID } = await import("node:crypto");
+      generatedPermissionId = randomUUID();
+      process.env.AAD_APP_ACCESS_AS_USER_PERMISSION_ID = generatedPermissionId;
+    }
+
     // Resolve ${{VAR}} env placeholders before parsing JSON
     const { content: resolvedContent, unresolved } = resolveEnvPlaceholders(manifestContent);
     if (unresolved.length > 0) {
@@ -228,6 +242,13 @@ export const updateAadAppDriver = createDriver({
 
     ctx.logger.info(`[${source}] Updated AAD app: objectId=${objectId}`);
 
-    return ok({ outputs: {} });
+    // Output the generated permission ID so the executor persists it to envMap.
+    // On subsequent runs the value comes from the env file and this path is skipped.
+    const outputs: Record<string, string> = {};
+    if (generatedPermissionId) {
+      outputs.AAD_APP_ACCESS_AS_USER_PERMISSION_ID = generatedPermissionId;
+    }
+
+    return ok({ outputs });
   },
 });
