@@ -119,9 +119,17 @@ export class AzureArmClient {
       return ok(deployment);
     }
     const armErr = deployment.properties?.error;
-    const message = armErr
-      ? `ARM deployment '${deploymentName}' in resource group '${resourceGroupName}' failed: [${armErr.code}] ${armErr.message}`
-      : `ARM deployment '${deploymentName}' in resource group '${resourceGroupName}' finished with state: ${state}`;
+    let message: string;
+    if (armErr) {
+      message = `ARM deployment '${deploymentName}' in resource group '${resourceGroupName}' failed: [${armErr.code}] ${armErr.message}`;
+      // Append nested details so CI logs show which specific resource(s) failed.
+      if (armErr.details?.length) {
+        const detailLines = armErr.details.map((d) => `  - [${d.code}] ${d.message}`).join("\n");
+        message += `\nDetails:\n${detailLines}`;
+      }
+    } else {
+      message = `ARM deployment '${deploymentName}' in resource group '${resourceGroupName}' finished with state: ${state}`;
+    }
     return err(userError("DeployArmError", message, { source: SOURCE }));
   }
 

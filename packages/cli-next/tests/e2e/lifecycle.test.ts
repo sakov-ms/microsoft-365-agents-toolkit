@@ -347,8 +347,10 @@ for (const template of templates) {
         await logger.wrapStep("validate", async () => {
           const envMap = await loadEnvMap(projectPath, envName);
           const validationTags = getValidationTags(template);
-          // Only check teamsApp when provision lifecycle was executed
-          if (hasProvisionLifecycle) {
+          // Only check teamsApp when the rendered YAML actually creates one.
+          // Some templates (e.g. connector/graph) have a provision lifecycle
+          // but no teamsApp/create step, so TEAMS_APP_ID is never set.
+          if (hasProvisionLifecycle && yamlContent.includes("teamsApp/create")) {
             validationTags.push("teamsApp");
           }
           const assertions = await runValidators(validationTags, envMap, projectPath);
