@@ -156,7 +156,7 @@ describe("Auth plugin drivers (oauth + apiKey)", () => {
 
       expect(result.isOk()).to.be.true;
       if (result.isOk()) {
-        expect(result.value.outputs.OAUTH2_CONFIGURATION_ID).to.equal("existing-config-id");
+        expect(result.value.outputs.configurationId).to.equal("existing-config-id");
       }
       // Should have called GET, not POST
       expect(mockAxios.post.called).to.be.false;
@@ -227,7 +227,7 @@ describe("Auth plugin drivers (oauth + apiKey)", () => {
 
       expect(result.isOk()).to.be.true;
       if (result.isOk()) {
-        expect(result.value.outputs.OAUTH2_CONFIGURATION_ID).to.equal("new-config-123");
+        expect(result.value.outputs.configurationId).to.equal("new-config-123");
       }
       expect(mockAxios.post.calledOnce).to.be.true;
 
@@ -266,7 +266,7 @@ describe("Auth plugin drivers (oauth + apiKey)", () => {
 
       expect(result.isOk()).to.be.true;
       if (result.isOk()) {
-        expect(result.value.outputs.OAUTH2_CONFIGURATION_ID).to.equal("entra-config-456");
+        expect(result.value.outputs.configurationId).to.equal("entra-config-456");
       }
 
       const payload = mockAxios.post.firstCall.args[1];
@@ -325,7 +325,7 @@ paths: {}
 
       expect(result.isOk()).to.be.true;
       if (result.isOk()) {
-        expect(result.value.outputs.OAUTH2_CONFIGURATION_ID).to.equal("spec-derived-config");
+        expect(result.value.outputs.configurationId).to.equal("spec-derived-config");
       }
 
       const payload = mockAxios.post.firstCall.args[1];
@@ -460,7 +460,7 @@ paths: {}
 
       expect(result.isOk()).to.be.true;
       if (result.isOk()) {
-        expect(result.value.outputs.API_KEY_REGISTRATION_ID).to.equal("existing-reg-id");
+        expect(result.value.outputs.registrationId).to.equal("existing-reg-id");
       }
       expect(mockAxios.post.called).to.be.false;
     });
@@ -505,7 +505,7 @@ paths: {}
 
       expect(result.isOk()).to.be.true;
       if (result.isOk()) {
-        expect(result.value.outputs.API_KEY_REGISTRATION_ID).to.equal("new-reg-456");
+        expect(result.value.outputs.registrationId).to.equal("new-reg-456");
       }
       expect(mockAxios.post.calledOnce).to.be.true;
 

@@ -108,7 +108,7 @@ async function extractDomainsFromSpec(specPath: string, projectPath: string): Pr
  * Creates an OAuth configuration in the Teams Developer Portal.
  *
  * Outputs:
- * - OAUTH2_CONFIGURATION_ID
+ * - configurationId  (mapped via writeToEnvironmentFile to the template's env var name)
  */
 export const oauthRegisterDriver = createDriver({
   id: "oauth/register",
@@ -140,7 +140,7 @@ export const oauthRegisterDriver = createDriver({
         );
         return ok({
           outputs: {
-            OAUTH2_CONFIGURATION_ID: config.existingConfigurationId,
+            configurationId: config.existingConfigurationId,
           },
         });
       }
@@ -240,7 +240,7 @@ export const oauthRegisterDriver = createDriver({
 
     return ok({
       outputs: {
-        OAUTH2_CONFIGURATION_ID: configId,
+        configurationId: configId,
       },
     });
   },

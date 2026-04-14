@@ -93,7 +93,7 @@ async function extractDomainsFromSpec(specPath: string, projectPath: string): Pr
  * Creates an API key (secret) registration in the Teams Developer Portal.
  *
  * Outputs:
- * - API_KEY_REGISTRATION_ID
+ * - registrationId  (mapped via writeToEnvironmentFile to the template's env var name)
  */
 export const apiKeyRegisterDriver = createDriver({
   id: "apiKey/register",
@@ -125,7 +125,7 @@ export const apiKeyRegisterDriver = createDriver({
         );
         return ok({
           outputs: {
-            API_KEY_REGISTRATION_ID: config.existingRegistrationId,
+            registrationId: config.existingRegistrationId,
           },
         });
       }
@@ -227,7 +227,7 @@ export const apiKeyRegisterDriver = createDriver({
 
     return ok({
       outputs: {
-        API_KEY_REGISTRATION_ID: registrationId,
+        registrationId: registrationId,
       },
     });
   },
