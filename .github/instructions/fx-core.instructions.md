@@ -475,6 +475,7 @@ Key patterns:
 | `oauth/register` | `builtin/oauth/register.ts` | Registers OAuth configuration in TDP (Custom + MicrosoftEntra providers) |
 | `apiKey/register` | `builtin/apiKey/register.ts` | Registers API key secret in TDP |
 | `cli/runNpmCommand` | `builtin/cli/runNpmCommand.ts` | Runs npm commands (install, build) for deploy lifecycle |
+| `cli/runDotnetCommand` | `builtin/cli/runDotnetCommand.ts` | Runs dotnet commands (publish, build) for csharp deploy lifecycle |
 
 **Registration:** `registerBuiltinDrivers()` in `builtin/index.ts` registers all built-in drivers with the global `driverRegistry`. Idempotent — safe to call multiple times. Call once at startup before executing any lifecycle.
 

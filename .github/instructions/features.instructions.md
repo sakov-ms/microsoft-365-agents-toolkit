@@ -43,7 +43,7 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 > interactive traversal with back navigation. `createProjectInteractive(ctx, inputs)` combines
 > both for question-driven project creation.
 >
-> The driver system has a `createDriver()` factory and **21 built-in driver implementations**
+> The driver system has a `createDriver()` factory and **22 built-in driver implementations**
 > registered via `registerBuiltinDrivers()`.
 > Service clients in `src/clients/` provide authenticated access to Teams Developer Portal,
 > Microsoft Graph (Entra ID), Azure ARM APIs, and M365 PackageService (sideloading).

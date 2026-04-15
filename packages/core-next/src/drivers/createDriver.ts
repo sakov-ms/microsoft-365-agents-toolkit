@@ -55,14 +55,14 @@ export function createDriver<TConfig = DriverConfig>(
       ctx.telemetry.sendTelemetryEvent(
         "driver-end",
         { driver: id, success: result.isOk() ? "true" : "false" },
-        { durationMs }
+        { duration: durationMs }
       );
       return result;
     } catch (error) {
       ctx.telemetry.sendTelemetryEvent(
         "driver-end",
         { driver: id, success: "false" },
-        { durationMs: 0 }
+        { duration: 0 }
       );
       return err(wrapUnexpectedError(id, error));
     }
