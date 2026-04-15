@@ -63,6 +63,9 @@ export const connectorTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript"],
     scaffoldFn: makeConnectorScaffoldFn(ConnectorTemplateNames.Graph),
     displayOrder: 1,
+    // ARM deploys flaky Microsoft.ApplicationInsights.AzureWebSites site extension +
+    // Key Vault + RBAC; not reliably testable in CI without real connector secrets.
+    testable: false,
     questions: [graphConnectorNameQuestion(), graphConnectorConnectionIdQuestion()],
   },
 ];

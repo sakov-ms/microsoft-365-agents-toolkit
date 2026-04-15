@@ -204,7 +204,12 @@ export class AzureArmClient {
       }
       return systemError(code, `[${apiName}] ${msg}`, { source: SOURCE });
     }
-    return systemError("ArmApiError", `[${apiName}] ${String(e)}`, { source: SOURCE });
+    // Surface inner errors from AggregateError (e.g. Node.js DNS/socket failures)
+    const msg =
+      e instanceof AggregateError
+        ? `${e.message}: ${e.errors.map((inner) => String(inner)).join("; ")}`
+        : String(e);
+    return systemError("ArmApiError", `[${apiName}] ${msg}`, { source: SOURCE });
   }
 }
 
