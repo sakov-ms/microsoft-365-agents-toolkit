@@ -75,31 +75,15 @@ export const extendToM365Driver = createDriver({
       );
     }
 
-    const service = new M365PackageService();
+    const service = new M365PackageService(ctx, tokenRes.value);
     const scope = normalizeAppScope(config.scope) ?? AppScope.Personal;
 
     ctx.logger.info(`[teamsApp/extendToM365] Sideloading to M365 (scope: ${scope})...`);
 
-    let titleId: string;
-    let appId: string;
-    let shareLink: string;
-    try {
-      [titleId, appId, shareLink] = await service.sideLoad(tokenRes.value, packagePath, scope);
-    } catch (error: unknown) {
-      // Surface Axios response body for HTTP errors (e.g. 400)
-      let detail = error instanceof Error ? error.message : String(error);
-      const axiosData = (error as { response?: { data?: unknown } })?.response?.data;
-      if (axiosData) {
-        const body = typeof axiosData === "string" ? axiosData : JSON.stringify(axiosData);
-        detail = `${detail} — response: ${body}`;
-      }
-      return err(
-        systemError("SideloadingFailed", `M365 sideloading failed: ${detail}`, {
-          source: "teamsApp/extendToM365",
-          inner: error instanceof Error ? error : undefined,
-        })
-      );
-    }
+    const sideloadRes = await service.sideLoad(packagePath, scope);
+    if (sideloadRes.isErr()) return err(sideloadRes.error);
+
+    const { titleId, appId, shareLink } = sideloadRes.value;
 
     ctx.logger.info(`[teamsApp/extendToM365] Sideloaded: titleId=${titleId}, appId=${appId}`);
 

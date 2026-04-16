@@ -243,29 +243,14 @@ export const extendToM365Op = defineOperation(
       );
     }
 
-    const service = new M365PackageService();
+    const service = new M365PackageService(ctx, tokenRes.value);
     const scope = input.scope ?? AppScope.Personal;
 
     ctx.logger.info(`[teamsApp/extendToM365] Sideloading to M365 (scope: ${scope})...`);
 
-    try {
-      const [titleId, appId, shareLink] = await service.sideLoad(
-        tokenRes.value,
-        packagePath,
-        scope
-      );
-      return ok({ titleId, appId, shareLink } satisfies ExtendToM365Result);
-    } catch (error: unknown) {
-      return err(
-        systemError(
-          "SideloadingFailed",
-          `M365 sideloading failed: ${error instanceof Error ? error.message : String(error)}`,
-          {
-            source: "teamsApp/extendToM365",
-            inner: error instanceof Error ? error : undefined,
-          }
-        )
-      );
-    }
+    const sideloadRes = await service.sideLoad(packagePath, scope);
+    if (sideloadRes.isErr()) return err(sideloadRes.error);
+
+    return ok(sideloadRes.value satisfies ExtendToM365Result);
   }
 );
