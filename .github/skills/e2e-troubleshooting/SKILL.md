@@ -82,6 +82,10 @@ gh run view <run-id> --log-failed --repo OfficeDev/microsoft-365-agents-toolkit 
 | `npm ERR!` / `dotnet build` failure | Build failure | Mustache rendering issue, missing env vars | Template `.tpl` files or scaffold options |
 | `authorizationUrl is required` | OAuth config | Template scaffolds wrong OAuth variant | `TEMPLATE_TEST_OPTIONS` in lifecycle.test.ts |
 | `maxLength` / `minLength` ARM error | Name too long | `resourceBaseName` exceeds Bicep constraint | `getUniqueAppName()` or `RESOURCE_SUFFIX` |
+| `400 /appCatalogs/teamsApps/…/appDefinitions?requiresReview=true` | Publish update (sideloaded) | Shared-scope sideloaded app doesn't support admin-review update | `publishTeamsAppUpdate` fallback in `graphApi/client.ts` |
+| `404 /appCatalogs/teamsApps/…/appDefinitions` | Publish update (phantom) | Sideloaded app has catalog entry but no real REST resource | `publishTeamsAppUpdate` 400→404 fallback returns existing ID |
+| `412 /appCatalogs/teamsApps?requiresReview=true` | Publish first-time (transient) | Graph API etag/propagation race; retryable | `sendWithRetry` exempts 412 from no-retry rule |
+| `404 /appCatalogs/teamsApps/<id>` during cleanup | Unpublish (expected) | App already removed by tenant policies or transient | Cleanup uses `Promise.allSettled`; safe to ignore |
 
 ### Step 3: Fix by Category
 
@@ -286,3 +290,74 @@ mark it as `testable: false` in its descriptor:
 
 This excludes it from `templateRegistry.list().filter(t => t.testable !== false)`.
 Use sparingly — prefer fixing the root cause.
+
+## Graph API Publish Failures
+
+The `teamsApp/publishAppPackage` step uses the Graph beta endpoint to publish or update
+apps in the tenant catalog. Several failure modes arise from how the Graph API handles
+sideloaded vs admin-published apps.
+
+### Publish Flow
+
+```
+publishAppPackage driver
+  │
+  ├─ First time? → publishTeamsApp()
+  │    POST /appCatalogs/teamsApps?requiresReview=true
+  │    ├─ 200 with id → OK
+  │    ├─ 200 with error body (BadGateway) → fallback to getStagedApp
+  │    ├─ 409 (AppDefinitionAlreadyExists) → publishTeamsAppUpdate
+  │    └─ 412 (PreconditionFailed) → retried by sendWithRetry
+  │
+  └─ Already published? → publishTeamsAppUpdate()
+       GET /appCatalogs/teamsApps?$filter=externalId eq '...'
+       POST /appCatalogs/teamsApps/{id}/appDefinitions?requiresReview=true
+       ├─ 200 → OK
+       ├─ 400 → retry without ?requiresReview=true
+       │    ├─ 200 → OK
+       │    └─ 404 → return existing catalog ID (phantom entry)
+       └─ other error → fail
+```
+
+### Scope-Dependent Behavior
+
+| Sideload Scope | Catalog Entry | requiresReview Update | Without requiresReview |
+|---------------|---------------|----------------------|----------------------|
+| **Personal** | No | N/A (first-time publish) | N/A |
+| **Shared** | Yes (phantom) | 400 BadRequest | 404 Not Found |
+| **Admin-published** | Yes (real) | 200 OK | 200 OK |
+
+**Personal scope:** `extendToM365` with `scope: Personal` does NOT create a catalog
+entry. The publish step does a first-time `POST /appCatalogs/teamsApps`.
+
+**Shared scope:** `extendToM365` with `scope: Shared` creates a catalog entry visible
+to `GET /appCatalogs/teamsApps?$filter=externalId eq '...'`, but this entry doesn't
+support the REST update endpoints. Both `?requiresReview=true` (400) and without (404)
+fail. The fix returns the existing catalog ID since the app IS already published via
+sideloading.
+
+### sendWithRetry Exemptions
+
+The retry helper does NOT retry most 4xx errors (client bugs won't self-heal), but
+exempts two status codes that are known to be transient:
+
+| Status | Meaning | Why Retryable |
+|--------|---------|---------------|
+| **429** | Too Many Requests | Rate limiting; will succeed after backoff |
+| **412** | Precondition Failed | Graph API etag/propagation race; resolves on retry |
+
+All other 4xx (400, 401, 403, 404, 409, etc.) throw immediately without retry.
+
+**Key file:** `packages/core-next/src/http/retry.ts`
+
+### Cleanup Failures (Safe to Ignore)
+
+After a successful test run, cleanup attempts to:
+1. Delete the Azure resource group (`az group delete`)
+2. Unpublish the Teams app (`DELETE /appCatalogs/teamsApps/{id}`)
+
+Both can return 404 if the resource was already removed. These are wrapped in
+`Promise.allSettled` and logged but don't fail the test. Common patterns:
+
+- `Resource group '...' could not be found` — DA templates have no Azure resources
+- `App doesn't exist in the tenant` — tenant policies auto-removed the app
