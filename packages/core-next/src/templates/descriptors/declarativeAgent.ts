@@ -218,6 +218,9 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     },
     displayOrder: 12,
     featureFlag: "DAMetaOS",
+    // Lifecycle E2E blocked by DAMetaOS feature flag.
+    // Enable once the flag is on in CI.
+    testable: false,
     questions: [officeAddinFolderQuestion()],
   },
 ];

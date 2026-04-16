@@ -57,5 +57,8 @@ export const foundryTemplateDescriptors: TemplateDescriptor[] = [
     scaffoldFn: makeFoundryScaffoldFn(FoundryTemplateNames.FoundryAgent),
     displayOrder: 4,
     questions: foundryQuestions,
+    // Lifecycle E2E requires a Foundry endpoint + Azure App Service.
+    // Enable once CI test tenant has a provisioned Foundry agent.
+    testable: false,
   },
 ];

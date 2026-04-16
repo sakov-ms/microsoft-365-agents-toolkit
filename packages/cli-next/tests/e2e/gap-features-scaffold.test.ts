@@ -2,11 +2,17 @@
 // Licensed under the MIT license.
 
 /**
- * E2E scaffold tests for Gap 4 (foundry-agent-to-m365) and
- * Gap 5 (da-meta-os-upgrade) templates.
+ * Scaffold-only E2E tests for templates that cannot run the full lifecycle
+ * in CI today:
  *
- * Runs the CLI binary as a subprocess and verifies the output project
- * structure. Does NOT create real Azure resources.
+ * - foundry-agent-to-m365: needs a real Foundry endpoint + Azure App Service
+ * - da-meta-os-upgrade: gated behind the DAMetaOS feature flag
+ *
+ * These verify CLI argument wiring and output project structure via
+ * subprocess invocation. No Azure resources or M365 tokens required.
+ *
+ * Once the blockers are resolved, these templates will be tested through
+ * the standard lifecycle matrix in lifecycle.test.ts.
  */
 
 import * as fs from "fs";
@@ -53,7 +59,7 @@ function readJson(filePath: string): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, unknown>;
 }
 
-describe("Gap 4 & 5 scaffold E2E", function () {
+describe("Scaffold-only E2E (templates excluded from lifecycle)", function () {
   this.timeout(5 * 60 * 1000); // 5 min total
 
   let dir: string;
@@ -67,9 +73,9 @@ describe("Gap 4 & 5 scaffold E2E", function () {
   });
 
   // ---------------------------------------------------------------------------
-  // Gap 4: atk new ai foundry-to-m365
+  // foundry-agent-to-m365 (blocked: no Foundry endpoint in CI)
   // ---------------------------------------------------------------------------
-  describe("atk new ai foundry-to-m365 scaffold", function () {
+  describe("foundry-agent-to-m365: scaffold without Azure/Foundry", function () {
     it("--help shows foundryEndpoint and foundryAgentId options", async function () {
       const result = await run(`${ATK_BIN} new ai foundry-to-m365 --help`);
       expect(result.exitCode).to.equal(0);
@@ -133,9 +139,9 @@ describe("Gap 4 & 5 scaffold E2E", function () {
   });
 
   // ---------------------------------------------------------------------------
-  // Gap 5: atk new da metaos-upgrade
+  // da-meta-os-upgrade (blocked: DAMetaOS feature flag off in CI)
   // ---------------------------------------------------------------------------
-  describe("atk new da metaos-upgrade scaffold", function () {
+  describe("da-meta-os-upgrade: scaffold and project structure", function () {
     it("--help shows officeAddinFolder option", async function () {
       const result = await run(`${ATK_BIN} new da metaos-upgrade --help`);
       expect(result.exitCode).to.equal(0);
