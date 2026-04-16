@@ -13,6 +13,7 @@ import { engineAgentTemplateDescriptors } from "../../../src/templates/descripto
 import { connectorTemplateDescriptors } from "../../../src/templates/descriptors/connector";
 import { messageExtensionTemplateDescriptors } from "../../../src/templates/descriptors/messageExtension";
 import { openApiTemplateDescriptors } from "../../../src/templates/descriptors/openApi";
+import { foundryTemplateDescriptors } from "../../../src/templates/descriptors/foundry";
 import type { TemplateDescriptor } from "../../../src/templates/types";
 import { QuestionNames } from "../../../src/questions/questionNames";
 
@@ -85,6 +86,7 @@ describe("Template Descriptors", () => {
   describeDescriptorArray("Connector Descriptors", connectorTemplateDescriptors);
   describeDescriptorArray("Message Extension Descriptors", messageExtensionTemplateDescriptors);
   describeDescriptorArray("OpenAPI Descriptors", openApiTemplateDescriptors);
+  describeDescriptorArray("Foundry Descriptors", foundryTemplateDescriptors);
 
   describe("All descriptors combined", () => {
     const all = [
@@ -96,6 +98,7 @@ describe("Template Descriptors", () => {
       ...connectorTemplateDescriptors,
       ...messageExtensionTemplateDescriptors,
       ...openApiTemplateDescriptors,
+      ...foundryTemplateDescriptors,
     ];
 
     it("should have globally unique IDs", () => {
@@ -118,6 +121,9 @@ describe("Template Descriptors", () => {
         expect(d.category).to.equal("tab");
       }
       for (const d of aiAgentTemplateDescriptors) {
+        expect(d.category).to.equal("ai-agent");
+      }
+      for (const d of foundryTemplateDescriptors) {
         expect(d.category).to.equal("ai-agent");
       }
       for (const d of engineAgentTemplateDescriptors) {
@@ -166,12 +172,28 @@ describe("Template Descriptors", () => {
         expect(d.questions).to.be.undefined;
       }
     });
+
+    it("foundry descriptors should have foundry questions", () => {
+      for (const d of foundryTemplateDescriptors) {
+        expect(d.questions).to.be.an("array").with.length(2);
+        const questionNames = d.questions!.map((q) => q.question.name);
+        expect(questionNames).to.include(QuestionNames.foundryEndpoint);
+        expect(questionNames).to.include(QuestionNames.foundryAgentId);
+      }
+    });
   });
 
   describe("Feature flags", () => {
     it("da/metaos should be gated by DAMetaOS flag", () => {
       const metaos = daTemplateDescriptors.find((d) => d.id === "da/metaos")!;
       expect(metaos.featureFlag).to.equal("DAMetaOS");
+    });
+
+    it("da/metaos-upgrade should be gated by DAMetaOS flag", () => {
+      const upgrade = daTemplateDescriptors.find((d) => d.id === "da/metaos-upgrade")!;
+      expect(upgrade.featureFlag).to.equal("DAMetaOS");
+      expect(upgrade.questions).to.be.an("array").with.length(1);
+      expect(upgrade.questions![0].question.name).to.equal(QuestionNames.officeAddinFolder);
     });
 
     it("non-flagged descriptors should not have featureFlag", () => {
@@ -182,6 +204,7 @@ describe("Template Descriptors", () => {
         ...engineAgentTemplateDescriptors,
         ...connectorTemplateDescriptors,
         ...messageExtensionTemplateDescriptors,
+        ...foundryTemplateDescriptors,
       ];
       for (const d of unflagged) {
         expect(d.featureFlag).to.be.undefined;
@@ -190,8 +213,8 @@ describe("Template Descriptors", () => {
   });
 
   describe("Descriptor counts", () => {
-    it("should have 11 DA descriptors", () => {
-      expect(daTemplateDescriptors).to.have.length(11);
+    it("should have 12 DA descriptors", () => {
+      expect(daTemplateDescriptors).to.have.length(12);
     });
 
     it("should have 1 bot descriptor", () => {
@@ -222,7 +245,11 @@ describe("Template Descriptors", () => {
       expect(openApiTemplateDescriptors).to.have.length(3);
     });
 
-    it("should have 24 total descriptors", () => {
+    it("should have 1 foundry descriptor", () => {
+      expect(foundryTemplateDescriptors).to.have.length(1);
+    });
+
+    it("should have 26 total descriptors", () => {
       const total =
         daTemplateDescriptors.length +
         botTemplateDescriptors.length +
@@ -231,8 +258,9 @@ describe("Template Descriptors", () => {
         engineAgentTemplateDescriptors.length +
         connectorTemplateDescriptors.length +
         messageExtensionTemplateDescriptors.length +
-        openApiTemplateDescriptors.length;
-      expect(total).to.equal(24);
+        openApiTemplateDescriptors.length +
+        foundryTemplateDescriptors.length;
+      expect(total).to.equal(26);
     });
   });
 });

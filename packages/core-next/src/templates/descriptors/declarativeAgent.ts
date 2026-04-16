@@ -6,7 +6,9 @@ import type { AtkContext } from "../../core/context";
 import { scaffoldTemplates } from "../scaffold/scaffolder";
 import { getTemplateReplaceMap } from "../scaffold/replaceMap";
 import { type TemplateInfo, convertToLangKey } from "../scaffold/types";
-import { mcpServerUrlQuestion } from "../../questions/commonQuestions";
+import { mcpServerUrlQuestion, officeAddinFolderQuestion } from "../../questions/commonQuestions";
+import { copyExistMetaOSProject, extendToDA, unifyProjectID } from "../helpers/metaOSHelper";
+import { ok, err } from "neverthrow";
 
 /**
  * Declarative Agent template names matching the template repository folder names.
@@ -27,6 +29,7 @@ export const DATemplateNames = {
   MCPLocal: "declarative-agent-with-action-from-mcp",
   GraphConnector: "graph-connector",
   MetaOS: "declarative-agent-meta-os-new-project",
+  MetaOSUpgrade: "declarative-agent-meta-os-upgrade-project",
 } as const;
 
 /**
@@ -182,5 +185,39 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.MetaOS),
     displayOrder: 11,
     featureFlag: "DAMetaOS",
+  },
+  {
+    id: "da/metaos-upgrade",
+    name: "Upgrade MetaOS Add-in to DA",
+    description: "Upgrade an existing MetaOS Office Add-in project to a Declarative Agent",
+    category: "declarative-agent",
+    languages: ["common"],
+    scaffoldFn: async (_ctx: AtkContext, opts: TemplateActionOptions) => {
+      const sourceFolder = opts.officeAddinFolder as string | undefined;
+      if (!sourceFolder) {
+        return ok({
+          projectPath: opts.destinationPath,
+          warnings: ["No source project folder specified"],
+        });
+      }
+      await copyExistMetaOSProject(sourceFolder, opts.destinationPath);
+      await extendToDA(opts.destinationPath, opts.projectName);
+
+      // Overlay the upgrade template files (README, m365agents.yml, env)
+      const replaceMap = getTemplateReplaceMap({ appName: opts.projectName, ...opts });
+      const tplInfo: TemplateInfo = {
+        templateName: DATemplateNames.MetaOSUpgrade,
+        language: "common",
+        replaceMap,
+      };
+      const result = await scaffoldTemplates(_ctx, [tplInfo], opts.destinationPath);
+      if (result.isErr()) return err(result.error);
+
+      await unifyProjectID(opts.destinationPath);
+      return ok({ projectPath: opts.destinationPath });
+    },
+    displayOrder: 12,
+    featureFlag: "DAMetaOS",
+    questions: [officeAddinFolderQuestion()],
   },
 ];
