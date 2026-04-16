@@ -36,6 +36,9 @@ export const QuestionNames = {
   graphConnectorName: "graphConnectorName",
   graphConnectorConnectionId: "graphConnectorConnectionId",
   knowledgeSource: "knowledgeSource",
+  foundryEndpoint: "foundryEndpoint",
+  foundryAgentId: "foundryAgentId",
+  officeAddinFolder: "officeAddinFolder",
 } as const;
 
 export type QuestionName = (typeof QuestionNames)[keyof typeof QuestionNames];

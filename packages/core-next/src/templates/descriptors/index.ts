@@ -10,6 +10,7 @@ import { engineAgentTemplateDescriptors } from "./engineAgent";
 import { connectorTemplateDescriptors } from "./connector";
 import { messageExtensionTemplateDescriptors } from "./messageExtension";
 import { openApiTemplateDescriptors } from "./openApi";
+import { foundryTemplateDescriptors } from "./foundry";
 
 /**
  * All built-in template descriptor arrays, collected for registration.
@@ -23,6 +24,7 @@ const allBuiltinDescriptors = [
   ...connectorTemplateDescriptors,
   ...messageExtensionTemplateDescriptors,
   ...openApiTemplateDescriptors,
+  ...foundryTemplateDescriptors,
 ];
 
 /**
@@ -48,3 +50,4 @@ export {
   MessageExtensionTemplateNames,
 } from "./messageExtension";
 export { openApiTemplateDescriptors, OpenApiTemplateNames } from "./openApi";
+export { foundryTemplateDescriptors, FoundryTemplateNames } from "./foundry";

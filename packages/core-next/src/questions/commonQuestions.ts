@@ -283,3 +283,45 @@ export function mcpServerUrlQuestion(): QuestionSpec {
   };
   return { question };
 }
+
+/**
+ * Create "Foundry project endpoint" text question.
+ */
+export function foundryEndpointQuestion(): QuestionSpec {
+  const question: TextInputQuestion = {
+    type: "text",
+    name: QuestionNames.foundryEndpoint,
+    title: "Enter your AI Foundry project endpoint",
+    placeholder: "https://your-project.services.ai.azure.com",
+  };
+  return { question };
+}
+
+/**
+ * Create "Foundry agent ID" text question (conditional on foundryEndpoint).
+ */
+export function foundryAgentIdQuestion(): QuestionSpec {
+  const question: TextInputQuestion = {
+    type: "text",
+    name: QuestionNames.foundryAgentId,
+    title: "Enter your Foundry agent ID",
+    placeholder: "agent-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  };
+  return {
+    question,
+    dependsOn: QuestionNames.foundryEndpoint,
+    condition: (inputs: Inputs) => !!inputs[QuestionNames.foundryEndpoint],
+  };
+}
+
+/**
+ * Create "Existing Office Add-in project folder" question (for MetaOS upgrade).
+ */
+export function officeAddinFolderQuestion(): QuestionSpec {
+  const question: FolderQuestion = {
+    type: "folder",
+    name: QuestionNames.officeAddinFolder,
+    title: "Select your existing Office Add-in project folder",
+  };
+  return { question };
+}
