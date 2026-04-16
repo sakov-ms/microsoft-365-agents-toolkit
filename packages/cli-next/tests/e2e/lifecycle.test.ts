@@ -33,6 +33,8 @@ import {
   project,
   provisionOp,
   deployOp,
+  publishOp,
+  clients,
 } from "@microsoft/teamsfx-core-next";
 import type { TemplateDescriptor } from "@microsoft/teamsfx-core-next";
 
@@ -201,13 +203,43 @@ for (const template of templates) {
       const checkpoint = new TestCheckpoint(testId);
       const logger = new StepLogger(testId);
 
+      /** Track the published app catalog ID so afterEach can unpublish it. */
+      let publishedCatalogAppId: string | undefined;
+
       afterEach(async function () {
         // GUARANTEED cleanup — runs even on test failure
         // Uses Promise.allSettled so one failure doesn't block others
-        await Promise.allSettled([
+        const cleanupTasks: Promise<unknown>[] = [
           deleteResourceGroup(rgName),
           fs.promises.rm(projectPath, { recursive: true, force: true }).catch(() => {}),
-        ]);
+        ];
+
+        // Unpublish the Teams app from the org catalog if it was published
+        if (publishedCatalogAppId) {
+          cleanupTasks.push(
+            (async () => {
+              try {
+                const { ctx: cleanupCtx } = createTestContext(projectPath);
+                const tokenRes = await cleanupCtx.auth.m365TokenProvider.getAccessToken({
+                  scopes: clients.graphAppCatalogScopes(),
+                });
+                if (tokenRes.isOk()) {
+                  const graphClient = new clients.GraphApiClient(cleanupCtx, tokenRes.value);
+                  const result = await graphClient.unpublishTeamsApp(publishedCatalogAppId!);
+                  if (result.isErr()) {
+                    console.warn(
+                      `[cleanup] Failed to unpublish app ${publishedCatalogAppId}: ${result.error.message}`
+                    );
+                  }
+                }
+              } catch (e) {
+                console.warn(`[cleanup] Error unpublishing app: ${e}`);
+              }
+            })()
+          );
+        }
+
+        await Promise.allSettled(cleanupTasks);
         checkpoint.reset();
         await logger.flush();
       });
@@ -244,6 +276,7 @@ for (const template of templates) {
         const yamlContent = yamlExists ? fs.readFileSync(yamlPath, "utf-8") : "";
         const hasProvisionLifecycle = yamlExists && yamlContent.includes("provision:");
         const hasDeployLifecycle = yamlExists && yamlContent.includes("deploy:");
+        const hasPublishLifecycle = yamlExists && yamlContent.includes("publish:");
         const needsAzure = yamlExists && yamlNeedsAzure(yamlContent);
 
         // --- Phase 2: Create resource group (only when needed) ---
@@ -343,6 +376,33 @@ for (const template of templates) {
           });
         }
 
+        // --- Phase 4b: Publish (skip if template has no publish lifecycle) ---
+        if (hasPublishLifecycle) {
+          await checkpoint.runPhase("publish", async () => {
+            await logger.wrapStep("publish", async () => {
+              const result = await runOperation(publishOp, ctx, {
+                projectPath,
+                envName,
+              });
+              expect(result.isOk(), `publish failed: ${result.isErr() ? result.error.message : ""}`)
+                .to.be.true;
+
+              // Capture the published app ID for cleanup
+              const envMap = await loadEnvMap(projectPath, envName);
+              publishedCatalogAppId = envMap.get("TEAMS_APP_PUBLISHED_APP_ID");
+              expect(
+                publishedCatalogAppId,
+                "TEAMS_APP_PUBLISHED_APP_ID should be set after publish"
+              ).to.be.a("string").and.not.be.empty;
+            });
+          });
+        } else {
+          await logger.wrapStep("publish", async () => {
+            // No publish lifecycle — skip
+            return undefined;
+          });
+        }
+
         // --- Phase 5: Final validation ---
         await logger.wrapStep("validate", async () => {
           const envMap = await loadEnvMap(projectPath, envName);
@@ -352,6 +412,9 @@ for (const template of templates) {
           // but no teamsApp/create step, so TEAMS_APP_ID is never set.
           if (hasProvisionLifecycle && yamlContent.includes("teamsApp/create")) {
             validationTags.push("teamsApp");
+          }
+          if (hasPublishLifecycle) {
+            validationTags.push("publishedApp");
           }
           const assertions = await runValidators(validationTags, envMap, projectPath);
           const failed = assertions.filter((a) => !a.passed);

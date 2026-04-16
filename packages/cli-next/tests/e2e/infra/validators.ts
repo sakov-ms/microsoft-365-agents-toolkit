@@ -110,12 +110,25 @@ async function validateProjectStructure(
 // Validator registry — maps tags to validator functions
 // ---------------------------------------------------------------------------
 
+async function validatePublishedApp(envMap: EnvMap): Promise<AssertionResult[]> {
+  const publishedAppId = envMap.get("TEAMS_APP_PUBLISHED_APP_ID");
+  return [
+    {
+      name: "TEAMS_APP_PUBLISHED_APP_ID is defined",
+      passed: !!publishedAppId,
+      expected: "non-empty string",
+      actual: publishedAppId ?? "undefined",
+    },
+  ];
+}
+
 const VALIDATOR_MAP: Record<string, ValidatorFn> = {
   teamsApp: validateTeamsApp,
   bot: validateBot,
   tab: validateTab,
   aad: validateAad,
   function: validateFunction,
+  publishedApp: validatePublishedApp,
   project: validateProjectStructure,
 };
 
