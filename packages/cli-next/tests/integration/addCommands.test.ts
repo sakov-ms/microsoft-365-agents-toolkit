@@ -104,7 +104,7 @@ describe("Add / Set / M365 command integration", () => {
       expect(subcmdNames).to.include("auth-config");
     });
 
-    it("atk add action — should require --api-spec-path, --plugin-manifest-path, --action-id", () => {
+    it("atk add action — should have --api-spec-path, --plugin-manifest-path, --action-id", () => {
       const program = buildProgram("atk");
       program.exitOverride();
 
@@ -117,6 +117,27 @@ describe("Add / Set / M365 command integration", () => {
       expect(optLongs).to.include("--plugin-manifest-path");
       expect(optLongs).to.include("--action-id");
       expect(optLongs).to.include("--agent-manifest-path");
+    });
+
+    it("atk add action — should have MCP options", () => {
+      const program = buildProgram("atk");
+      program.exitOverride();
+
+      const addCmd = program.commands.find((c) => c.name() === "add");
+      const actionCmd = addCmd!.commands.find((c) => c.name() === "action");
+      expect(actionCmd).to.exist;
+
+      const optLongs = actionCmd!.options.map((o) => o.long);
+      expect(optLongs).to.include("--api-plugin-type");
+      expect(optLongs).to.include("--mcp-server-url");
+      expect(optLongs).to.include("--mcp-server-name");
+      expect(optLongs).to.include("--mcp-is-local");
+      expect(optLongs).to.include("--mcp-auth-type");
+      expect(optLongs).to.include("--mcp-tools-file");
+      expect(optLongs).to.include("--mcp-selected-tools");
+      expect(optLongs).to.include("--mcp-oauth-auth-url");
+      expect(optLongs).to.include("--mcp-oauth-token-url");
+      expect(optLongs).to.include("--mcp-oauth-refresh-url");
     });
 
     it("atk add capability — should require --capability-type", () => {
@@ -192,12 +213,121 @@ describe("Add / Set / M365 command integration", () => {
         .join("\n");
       expect(output).to.include("Sensitivity label set successfully");
     });
+
+    it("atk add action --api-plugin-type mcp — adds MCP action to DA project", async () => {
+      await createDAProject();
+
+      // Create ai-plugin.json in appPackage/
+      const pluginPath = path.join(tmpDir, "appPackage", "ai-plugin.json");
+      await fs.promises.writeFile(
+        pluginPath,
+        JSON.stringify({
+          schema_version: "v2.4",
+          name_for_human: "Test Plugin",
+          namespace: "testplugin",
+          description_for_human: "A test plugin",
+        }),
+        "utf-8"
+      );
+
+      // Create tools file
+      const toolsFile = path.join(tmpDir, "mcp-tools-input.json");
+      await fs.promises.writeFile(
+        toolsFile,
+        JSON.stringify([
+          { name: "getWeather", description: "Get weather for a city" },
+          { name: "getNews", description: "Get latest news" },
+        ]),
+        "utf-8"
+      );
+
+      const program = buildProgram("atk");
+      program.exitOverride();
+
+      await program.parseAsync([
+        "node",
+        "atk",
+        "add",
+        "action",
+        "--api-plugin-type",
+        "mcp",
+        "--mcp-server-url",
+        "https://weather-mcp.example.com/sse",
+        "--mcp-server-name",
+        "weather-server",
+        "--mcp-auth-type",
+        "none",
+        "--mcp-tools-file",
+        toolsFile,
+        "--mcp-selected-tools",
+        "getWeather",
+        "--plugin-manifest-path",
+        pluginPath,
+      ]);
+
+      // Verify ai-plugin.json was updated with MCP runtime
+      const errStub = console.error as sinon.SinonStub;
+      const errOutput = errStub
+        .getCalls()
+        .map((c) => c.args.join(" "))
+        .join("\n");
+      expect(process.exitCode, `Unexpected exit code. stderr: ${errOutput}`).to.not.equal(1);
+      const savedPlugin = JSON.parse(await fs.promises.readFile(pluginPath, "utf-8"));
+      expect(savedPlugin.functions).to.be.an("array").with.length.greaterThan(0);
+      const fnNames = savedPlugin.functions.map((f: { name: string }) => f.name);
+      expect(fnNames).to.include("getWeather");
+
+      const runtime = savedPlugin.runtimes?.find(
+        (r: Record<string, unknown>) =>
+          (r.spec as Record<string, unknown>)?.url === "https://weather-mcp.example.com/sse"
+      );
+      expect(runtime, "MCP runtime should be present").to.exist;
+      expect(runtime.type).to.equal("RemoteMCPServer");
+
+      // Verify mcp-tools.json sidecar was created
+      const toolsSidecarPath = path.join(tmpDir, "appPackage", "mcp-tools.json");
+      const toolsSidecar = JSON.parse(await fs.promises.readFile(toolsSidecarPath, "utf-8"));
+      expect(toolsSidecar).to.be.an("array").with.length(1);
+      expect(toolsSidecar[0].name).to.equal("getWeather");
+
+      // Verify success message
+      const logStub = console.log as sinon.SinonStub;
+      const output = logStub
+        .getCalls()
+        .map((c) => c.args.join(" "))
+        .join("\n");
+      expect(output).to.include("MCP action added successfully");
+    });
+
+    it("atk add action --api-plugin-type api-spec — requires OpenAPI options", async () => {
+      const program = buildProgram("atk");
+      program.exitOverride();
+
+      await program.parseAsync([
+        "node",
+        "atk",
+        "add",
+        "action",
+        "--api-plugin-type",
+        "api-spec",
+        // Missing required options for api-spec mode
+      ]);
+
+      // The handler catches errors and sets exitCode
+      expect(process.exitCode).to.equal(1);
+      const errStub = console.error as sinon.SinonStub;
+      const errOutput = errStub
+        .getCalls()
+        .map((c) => c.args.join(" "))
+        .join("\n");
+      expect(errOutput).to.include("--api-spec-path");
+    });
   });
 
   // ─── Required option verification (Commander tree) ─────────
 
   describe("Required option flags", () => {
-    it("atk add action — --action-id, --api-spec-path, --plugin-manifest-path are mandatory", () => {
+    it("atk add action — OpenAPI options are optional (required only for api-spec mode)", () => {
       const program = buildProgram("atk");
       program.exitOverride();
 
@@ -205,10 +335,11 @@ describe("Add / Set / M365 command integration", () => {
       const actionCmd = addCmd!.commands.find((c) => c.name() === "action");
       expect(actionCmd).to.exist;
 
+      // These are now .option() not .requiredOption() because they're only required for api-spec mode
       const mandatory = actionCmd!.options.filter((o) => o.mandatory).map((o) => o.long);
-      expect(mandatory).to.include("--action-id");
-      expect(mandatory).to.include("--api-spec-path");
-      expect(mandatory).to.include("--plugin-manifest-path");
+      expect(mandatory).to.not.include("--action-id");
+      expect(mandatory).to.not.include("--api-spec-path");
+      expect(mandatory).to.not.include("--plugin-manifest-path");
     });
 
     it("atk m365-sideload — --file-path is mandatory", () => {

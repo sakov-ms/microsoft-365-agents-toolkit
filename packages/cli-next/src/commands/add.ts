@@ -3,7 +3,7 @@
 
 import { Command } from "commander";
 import { wrapHandlerWithContext } from "../handler";
-import { addActionAction } from "../actions/addAction";
+import { addActionAction, addMCPActionAction } from "../actions/addAction";
 import { addCapabilityAction } from "../actions/addCapability";
 import { addAuthConfigAction } from "../actions/addAuthConfig";
 
@@ -14,23 +14,72 @@ export function createAddCommands(program: Command): void {
   const add = program.command("add").description("Add a feature or capability to your project");
 
   // atk add action (was "add plugin" in old CLI)
+  // Supports two modes via --api-plugin-type: api-spec (default) and mcp
   add
     .command("action")
     .description("Add an action to extend a Declarative Agent")
-    .requiredOption("--api-spec-path <path>", "Path to the OpenAPI specification file")
-    .requiredOption("--plugin-manifest-path <path>", "Path to the plugin manifest file")
-    .requiredOption("--action-id <id>", "Unique identifier for the action")
+    .option(
+      "--api-plugin-type <type>",
+      "Action type: api-spec (OpenAPI) or mcp (MCP server)",
+      "api-spec"
+    )
+    // OpenAPI options (required when api-plugin-type = api-spec)
+    .option("--api-spec-path <path>", "Path to the OpenAPI specification file")
+    .option("--plugin-manifest-path <path>", "Path to the plugin manifest file")
+    .option("--action-id <id>", "Unique identifier for the action")
+    // MCP options (required when api-plugin-type = mcp)
+    .option("--mcp-server-url <url>", "MCP server URL or local identifier")
+    .option("--mcp-server-name <name>", "Human-readable MCP server name")
+    .option("--mcp-is-local", "MCP server is local (stdio) vs remote (HTTP)", false)
+    .option(
+      "--mcp-auth-type <type>",
+      "MCP auth type: oauth, api-key, bearer-token, microsoft-entra, none",
+      "none"
+    )
+    .option("--mcp-tools-file <path>", "Path to JSON file with MCP tool definitions")
+    .option("--mcp-selected-tools <names...>", "Subset of tool names to include")
+    .option("--mcp-oauth-auth-url <url>", "OAuth authorization URL (for mcp auth=oauth)")
+    .option("--mcp-oauth-token-url <url>", "OAuth token URL (for mcp auth=oauth)")
+    .option("--mcp-oauth-refresh-url <url>", "OAuth refresh URL (for mcp auth=oauth)")
+    // Shared options
     .option("--agent-manifest-path <path>", "Path to the DA manifest (auto-detected if omitted)")
     .action(
       wrapHandlerWithContext("add action", async (ctx, opts) => {
-        await addActionAction(ctx, {
-          projectPath: ctx.projectPath ?? process.cwd(),
-          agentManifestPath: opts.agentManifestPath as string | undefined,
-          apiSpecPath: opts.apiSpecPath as string,
-          pluginManifestPath: opts.pluginManifestPath as string,
-          actionId: opts.actionId as string,
-        });
-        console.log("Action added successfully.");
+        const pluginType = opts.apiPluginType as string;
+        const projectPath = ctx.projectPath ?? process.cwd();
+
+        if (pluginType === "mcp") {
+          await addMCPActionAction(ctx, {
+            projectPath,
+            agentManifestPath: opts.agentManifestPath as string | undefined,
+            pluginManifestPath: opts.pluginManifestPath as string | undefined,
+            serverUrl: opts.mcpServerUrl as string,
+            serverName: opts.mcpServerName as string,
+            isLocal: opts.mcpIsLocal as boolean,
+            authType: (opts.mcpAuthType as string) ?? "none",
+            toolsFilePath: opts.mcpToolsFile as string | undefined,
+            selectedTools: opts.mcpSelectedTools as string[] | undefined,
+            oauthAuthUrl: opts.mcpOauthAuthUrl as string | undefined,
+            oauthTokenUrl: opts.mcpOauthTokenUrl as string | undefined,
+            oauthRefreshUrl: opts.mcpOauthRefreshUrl as string | undefined,
+          });
+          console.log("MCP action added successfully.");
+        } else {
+          // Validate required options for api-spec mode
+          if (!opts.apiSpecPath || !opts.pluginManifestPath || !opts.actionId) {
+            throw new Error(
+              "Options --api-spec-path, --plugin-manifest-path, and --action-id are required for api-spec actions"
+            );
+          }
+          await addActionAction(ctx, {
+            projectPath,
+            agentManifestPath: opts.agentManifestPath as string | undefined,
+            apiSpecPath: opts.apiSpecPath as string,
+            pluginManifestPath: opts.pluginManifestPath as string,
+            actionId: opts.actionId as string,
+          });
+          console.log("Action added successfully.");
+        }
       })
     );
 

@@ -12,7 +12,7 @@ import * as os from "node:os";
 import type { AtkContext } from "@microsoft/teamsfx-core-next";
 
 // Actions under test
-import { addActionAction } from "../../src/actions/addAction";
+import { addActionAction, addMCPActionAction } from "../../src/actions/addAction";
 import { addCapabilityAction } from "../../src/actions/addCapability";
 import { addAuthConfigAction } from "../../src/actions/addAuthConfig";
 import { setSensitivityLabelAction } from "../../src/actions/setSensitivityLabel";
@@ -206,6 +206,177 @@ describe("DA Action Handlers", () => {
       } catch (e: any) {
         // Expected — file doesn't exist
         expect(e.message).to.be.a("string");
+      }
+    });
+  });
+
+  describe("addMCPActionAction()", () => {
+    it("should throw when --mcp-server-url is missing", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "",
+          serverName: "test",
+          isLocal: false,
+          authType: "none",
+        });
+        expect.fail("should have thrown");
+      } catch (e: any) {
+        expect(e.message).to.include("--mcp-server-url");
+      }
+    });
+
+    it("should throw when --mcp-server-name is missing", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "https://mcp.example.com",
+          serverName: "",
+          isLocal: false,
+          authType: "none",
+        });
+        expect.fail("should have thrown");
+      } catch (e: any) {
+        expect(e.message).to.include("--mcp-server-name");
+      }
+    });
+
+    it("should throw when auth type is invalid", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "https://mcp.example.com",
+          serverName: "test",
+          isLocal: false,
+          authType: "invalid-auth",
+        });
+        expect.fail("should have thrown");
+      } catch (e: any) {
+        expect(e.message).to.include("Invalid --mcp-auth-type");
+      }
+    });
+
+    it("should throw when tools file does not exist", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "https://mcp.example.com",
+          serverName: "test",
+          isLocal: false,
+          authType: "none",
+          toolsFilePath: path.join(tmpDir, "nonexistent-tools.json"),
+        });
+        expect.fail("should have thrown");
+      } catch (e: any) {
+        expect(e.message).to.include("not found");
+      }
+    });
+
+    it("should throw when tools file contains invalid JSON", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      const toolsFile = path.join(tmpDir, "bad-tools.json");
+      await fs.writeFile(toolsFile, "{ not valid json }", "utf-8");
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "https://mcp.example.com",
+          serverName: "test",
+          isLocal: false,
+          authType: "none",
+          toolsFilePath: toolsFile,
+        });
+        expect.fail("should have thrown");
+      } catch (e: any) {
+        expect(e).to.be.instanceOf(SyntaxError);
+      }
+    });
+
+    it("should throw when tools file is not an array", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      const toolsFile = path.join(tmpDir, "obj-tools.json");
+      await fs.writeFile(toolsFile, JSON.stringify({ name: "not-array" }), "utf-8");
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "https://mcp.example.com",
+          serverName: "test",
+          isLocal: false,
+          authType: "none",
+          toolsFilePath: toolsFile,
+        });
+        expect.fail("should have thrown");
+      } catch (e: any) {
+        expect(e.message).to.include("JSON array");
+      }
+    });
+
+    it("should throw when a tool entry is missing name", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      const toolsFile = path.join(tmpDir, "no-name-tools.json");
+      await fs.writeFile(toolsFile, JSON.stringify([{ description: "no name field" }]), "utf-8");
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "https://mcp.example.com",
+          serverName: "test",
+          isLocal: false,
+          authType: "none",
+          toolsFilePath: toolsFile,
+        });
+        expect.fail("should have thrown");
+      } catch (e: any) {
+        expect(e.message).to.include("name");
+      }
+    });
+
+    it("should accept all valid auth types", async () => {
+      const validTypes = ["oauth", "api-key", "bearer-token", "microsoft-entra", "none"];
+      for (const authType of validTypes) {
+        const ctx = createMockContext({ projectPath: tmpDir });
+        try {
+          await addMCPActionAction(ctx, {
+            projectPath: tmpDir,
+            serverUrl: "https://mcp.example.com",
+            serverName: "test",
+            isLocal: false,
+            authType,
+          });
+        } catch (e: any) {
+          // Expected — plugin manifest won't exist, but should NOT fail on auth validation
+          expect(e.message).to.not.include("Invalid --mcp-auth-type");
+        }
+      }
+    });
+
+    it("should load tools from valid tools file", async () => {
+      const ctx = createMockContext({ projectPath: tmpDir });
+      const toolsFile = path.join(tmpDir, "tools.json");
+      await fs.writeFile(
+        toolsFile,
+        JSON.stringify([
+          { name: "getTodos", description: "Get todos" },
+          { name: "addTodo", description: "Add a todo", inputSchema: { type: "object" } },
+        ]),
+        "utf-8"
+      );
+
+      // Will fail at the plugin manifest step, but tools loading should succeed
+      try {
+        await addMCPActionAction(ctx, {
+          projectPath: tmpDir,
+          serverUrl: "https://mcp.example.com",
+          serverName: "test",
+          isLocal: false,
+          authType: "none",
+          toolsFilePath: toolsFile,
+        });
+      } catch (e: any) {
+        // Should fail at addMCPActionOp, not at tools loading
+        expect(e.message).to.not.include("tools file");
       }
     });
   });

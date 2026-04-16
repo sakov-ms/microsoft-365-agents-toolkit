@@ -76,10 +76,12 @@ export async function addMCPAction(input: AddMCPActionInput): Promise<Result<voi
       run_for_functions: runForFunctions,
     };
     if (!isLocal && selectedToolDefs.length > 0) {
-      (runtime.spec as Record<string, unknown>).mcp_tool_description = "mcp-tools.json";
+      (runtime.spec as Record<string, unknown>).mcp_tool_description = { file: "mcp-tools.json" };
     }
     if (auth === "oauth" || auth === "microsoft-entra") {
       runtime.auth = { type: "OAuthPluginVault", reference_id: `${serverName}_oauth` };
+    } else {
+      runtime.auth = { type: "None" };
     }
     wrapper.addRuntime(runtime as never);
 

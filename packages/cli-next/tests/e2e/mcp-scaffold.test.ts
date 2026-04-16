@@ -151,6 +151,80 @@ describe("MCP scaffold integration", function () {
       expect(result.stdout).to.include("--api-spec-path");
       expect(result.stdout).to.include("--plugin-manifest-path");
       expect(result.stdout).to.include("--action-id");
+      expect(result.stdout).to.include("--api-plugin-type");
+      expect(result.stdout).to.include("--mcp-server-url");
+      expect(result.stdout).to.include("--mcp-server-name");
+      expect(result.stdout).to.include("--mcp-auth-type");
+      expect(result.stdout).to.include("--mcp-tools-file");
+    });
+
+    it("add action --api-plugin-type mcp — adds MCP tools to scaffolded project", async function () {
+      // Scaffold a DA + MCP remote project first
+      const scaffoldResult = await run(
+        `${ATK_BIN} new da mcp-remote --name McpAddTest --mcpServerUrl ${MCP_SERVER_URL} --folder ${dir} --non-interactive`,
+        dir
+      );
+      expect(scaffoldResult.exitCode, `scaffold stderr: ${scaffoldResult.stderr}`).to.equal(0);
+
+      const projectPath = path.join(dir, "McpAddTest");
+      const appPackage = path.join(projectPath, "appPackage");
+      const pluginPath = path.join(appPackage, "ai-plugin.json");
+
+      // Create a tools file for the add action
+      const toolsFile = path.join(dir, "add-tools.json");
+      fs.writeFileSync(
+        toolsFile,
+        JSON.stringify([
+          { name: "searchDocs", description: "Search documentation" },
+          { name: "getPage", description: "Get a specific page" },
+        ]),
+        "utf8"
+      );
+
+      const addResult = await run(
+        [
+          ATK_BIN,
+          "add",
+          "action",
+          "--api-plugin-type",
+          "mcp",
+          "--mcp-server-url",
+          "https://another-mcp.example.com/sse",
+          "--mcp-server-name",
+          "docs-server",
+          "--mcp-auth-type",
+          "none",
+          "--mcp-tools-file",
+          toolsFile,
+          "--mcp-selected-tools",
+          "searchDocs",
+          "--plugin-manifest-path",
+          pluginPath,
+        ].join(" "),
+        projectPath
+      );
+      expect(addResult.exitCode, `add stderr: ${addResult.stderr}`).to.equal(0);
+
+      // Verify ai-plugin.json has the new MCP runtime
+      const savedPlugin = readJson(pluginPath);
+      const runtimes = savedPlugin.runtimes as Array<Record<string, unknown>>;
+      const mcpRuntime = runtimes?.find(
+        (r) => (r.spec as Record<string, unknown>)?.url === "https://another-mcp.example.com/sse"
+      );
+      expect(mcpRuntime, "MCP runtime for docs-server should exist").to.exist;
+      expect(mcpRuntime!.type).to.equal("RemoteMCPServer");
+
+      // Verify functions were added
+      const functions = savedPlugin.functions as Array<{ name: string }>;
+      const fnNames = functions?.map((f) => f.name) ?? [];
+      expect(fnNames).to.include("searchDocs");
+
+      // Verify mcp-tools.json sidecar
+      const sidecarPath = path.join(appPackage, "mcp-tools.json");
+      expect(fs.existsSync(sidecarPath), "mcp-tools.json sidecar should exist").to.be.true;
+      const sidecar = readJson(sidecarPath) as unknown as Array<{ name: string }>;
+      expect(sidecar).to.be.an("array");
+      expect(sidecar.map((t) => t.name)).to.include("searchDocs");
     });
 
     it("add action fails gracefully without required flags", async function () {
@@ -162,11 +236,10 @@ describe("MCP scaffold integration", function () {
       expect(scaffoldResult.exitCode, `scaffold stderr: ${scaffoldResult.stderr}`).to.equal(0);
 
       const projectPath = path.join(dir, "McpBase");
-      // add action without required flags → should fail with helpful error
-      const result = await run(`${ATK_BIN} add action`, projectPath);
+      // add action with mcp type but no --mcp-server-url → should fail
+      const result = await run(`${ATK_BIN} add action --api-plugin-type mcp`, projectPath);
       expect(result.exitCode).to.not.equal(0);
-      // Should mention missing required option
-      expect(result.stderr).to.match(/required|missing|api-spec-path/i);
+      expect(result.stderr).to.match(/required|missing|mcp-server-url/i);
     });
   });
 });
