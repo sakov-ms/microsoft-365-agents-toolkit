@@ -48,6 +48,24 @@ describe("sendWithRetry", () => {
     expect(callCount).to.equal(2); // initial + 1 retry
   });
 
+  it("retries 412 Precondition Failed (transient Graph API condition)", async () => {
+    let callCount = 0;
+    const error412 = Object.assign(new Error("Precondition Failed"), {
+      response: { status: 412 },
+    });
+
+    try {
+      await sendWithRetry(() => {
+        callCount++;
+        throw error412;
+      }, 1);
+      expect.fail("should have thrown");
+    } catch {
+      // expected
+    }
+    expect(callCount).to.equal(2); // initial + 1 retry
+  });
+
   it("retries network errors without response", async () => {
     let callCount = 0;
     try {

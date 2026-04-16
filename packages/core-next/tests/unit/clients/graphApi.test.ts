@@ -614,7 +614,36 @@ describe("GraphApiClient", () => {
       expect(secondUrl).to.not.include("requiresReview");
     });
 
-    it("returns error when 400 fallback also fails", async () => {
+    it("returns existing catalog ID when 400 fallback also fails with 404 (sideloaded phantom)", async () => {
+      mockAxios.get.resolves({
+        data: {
+          value: [
+            {
+              id: "cat-phantom",
+              displayName: "App",
+              appDefinitions: [{ publishingState: "published", lastModifiedDateTime: null }],
+            },
+          ],
+        },
+      });
+      const error400 = Object.assign(new Error("Bad Request"), {
+        response: { status: 400, data: {} },
+      });
+      const error404 = Object.assign(new Error("Not Found"), {
+        response: { status: 404, data: { error: { message: "App doesn't exist" } } },
+      });
+      mockAxios.post.onFirstCall().rejects(error400);
+      mockAxios.post.onSecondCall().rejects(error404);
+
+      const ctx = createMockContext();
+      const client = new GraphApiClient(ctx, "tok");
+
+      const result = await client.publishTeamsAppUpdate("ext-1", zipBuffer);
+      expect(result.isOk()).to.be.true;
+      expect(result._unsafeUnwrap()).to.equal("cat-phantom");
+    });
+
+    it("returns error when 400 fallback fails with non-404 error", async () => {
       mockAxios.get.resolves({
         data: {
           value: [

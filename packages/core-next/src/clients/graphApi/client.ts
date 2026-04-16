@@ -302,6 +302,17 @@ export class GraphApiClient {
         try {
           response = await sendWithRetry(() => this.betaAxios.post(url, file, { headers }));
         } catch (e2: unknown) {
+          // 404 after 400 means the app was sideloaded (Shared scope) and
+          // appears in the catalog query but doesn't have a real REST resource.
+          // The app IS published through sideloading — return the existing ID.
+          if (
+            e2 &&
+            typeof e2 === "object" &&
+            "response" in e2 &&
+            (e2 as any).response?.status === 404
+          ) {
+            return ok(staged.teamsAppId);
+          }
           return err(this.wrapError("publishTeamsAppUpdate", e2));
         }
       } else {
