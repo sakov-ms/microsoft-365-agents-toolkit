@@ -13,9 +13,9 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 ```
 
 > **v4 Note:** `packages/core-next/src/templates/` contains a `TemplateRegistry` with
-> `TemplateDescriptor` records. **24 descriptors** are registered across 8 files in
-> `src/templates/descriptors/`: DA (11), Bot (1), Tab (1), AI Agent (3), Engine Agent (3),
-> Connector (1), Message Extension (1), OpenAPI (3). Registered via `registerBuiltinTemplates()`.
+> `TemplateDescriptor` records. **26 descriptors** are registered across 9 files in
+> `src/templates/descriptors/`: DA (12), Bot (1), Tab (1), AI Agent (3), Engine Agent (3),
+> Connector (1), Message Extension (1), OpenAPI (3), Foundry (1). Registered via `registerBuiltinTemplates()`.
 > Descriptors support `questions?: QuestionSpec[]` for template-specific prompts (e.g., LLM
 > provider selection for AI agents, graph connector config for connectors).
 > Descriptors support `testable?: boolean` (defaults to `true`). Set `testable: false` for
@@ -44,7 +44,8 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 > both for question-driven project creation.
 >
 > The driver system has a `createDriver()` factory and **22 built-in driver implementations**
-> registered via `registerBuiltinDrivers()`.
+> registered via `registerBuiltinDrivers()`. The `publishAppPackage` driver now uses
+> `GraphApiClient` (Graph `/beta/appCatalogs/teamsApps`) instead of the legacy TDP API.
 > Service clients in `src/clients/` provide authenticated access to Teams Developer Portal,
 > Microsoft Graph (Entra ID), Azure ARM APIs, and M365 PackageService (sideloading).
 >
@@ -56,8 +57,8 @@ packages/fx-core/tests/integration/featureRegistry.ts ← Typed wrapper (loads J
 > - **Progress**: `createProgressAdapter(ui)` bridges to platform progress bar; `silentProgress` for CI
 >
 > **v4 Testing:** Both `packages/core-next/` and `packages/cli-next/` have full test
-> infrastructure (Mocha + Chai + Sinon + NYC). core-next has **549 unit tests**;
-> cli-next has **78 unit + 62 integration tests**; core-next has **48 integration tests**
+> infrastructure (Mocha + Chai + Sinon + NYC). core-next has **606 unit tests**;
+> cli-next has **87 unit + 81 integration tests**; core-next has **48 integration tests**
 > (includes specParser pipeline and adapter tests).
 > Plus **9 E2E scaffold tests** verified via cli-next + **9 OpenAPI spec-parser E2E tests**.
 > Run with `npm run test:unit` / `npm run test:integration`.

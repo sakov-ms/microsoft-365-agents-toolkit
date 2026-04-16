@@ -226,6 +226,7 @@ Pure async functions that bridge CLI options to core-next operations (testable w
 | `packageAction` | `actions/teamsapp.ts` | `runOperation(packageAppOp)` |
 | `listTemplatesAction` | `actions/listTemplates.ts` | `registry.list()` → table rows |
 | `addActionAction` | `actions/addAction.ts` | `runOperation(addExistingPluginOp)` |
+| `addMCPActionAction` | `actions/addAction.ts` | `runOperation(addMCPActionOp)` |
 | `addCapabilityAction` | `actions/addCapability.ts` | `runOperation(addKnowledgeOp)` |
 | `addAuthConfigAction` | `actions/addAuthConfig.ts` | `runOperation(injectOAuthActionOp \| injectApiKeyActionOp)` |
 | `setSensitivityLabelAction` | `actions/setSensitivityLabel.ts` | `runOperation(setSensitivityLabelOp)` |
@@ -267,7 +268,7 @@ packages/cli-next/
       environment.ts     — envListAction, envAddAction, envResetAction
       teamsapp.ts        — validateAction, packageAction
       listTemplates.ts   — listTemplatesAction(registry)
-      addAction.ts       — addActionAction (wires to addExistingPluginOp)
+      addAction.ts       — addActionAction (wires to addExistingPluginOp), addMCPActionAction (wires to addMCPActionOp)
       addCapability.ts   — addCapabilityAction (wires to addKnowledgeOp)
       addAuthConfig.ts   — addAuthConfigAction (wires to injectOAuth/ApiKeyOps)
       setSensitivityLabel.ts — setSensitivityLabelAction (wires to setSensitivityLabelOp)
@@ -279,7 +280,7 @@ packages/cli-next/
       account.ts      — auth show/login/logout
       env.ts          — env add/list/reset (wired to actions)
       teamsapp.ts     — validate/package (wired to actions), publish/update/doctor
-      add.ts          — add action/capability/auth-config (wired to DA ops)
+      add.ts          — add action/capability/auth-config (wired to DA ops; action routes via --api-plugin-type: api-spec→addActionAction, mcp→addMCPActionAction)
       list.ts         — list templates (wired to action) /samples
       m365.ts         — m365-sideload (wired to extendToM365Op) /unacquire/launch-info
       permission.ts   — permission grant/status

@@ -159,8 +159,14 @@ packages/core-next/src/
     ├── actions/         — addAction, addActionFromMCP, removeAction
     ├── auth/            — authInjector
     ├── capabilities/    — sensitivityLabel
-    ├── operations.ts    — DA-specific operations (addKnowledgeOp, addActionOp, etc.)
-    └── types.ts         — DA domain types
+    ├── operations.ts    — DA-specific operations (addKnowledgeOp, addActionOp, addMCPActionOp, etc.)
+    └── types.ts         — DA domain types (AuthScheme, MCPToolDefinition, AddMCPActionInput, etc.)
+
+> **v2.4 Schema Notes (APIPluginManifestWrapper):**
+> - `mcp_tool_description` must be `{ file: "mcp-tools.json" }` (not a bare string) — the v2.4 typed converter expects `MCPTool` object
+> - `auth` is **always required** (even `{ type: "None" }` for unauthenticated) — `RuntimeAuthenticationObject` is non-optional in v2.4
+> - `namespace` is required in the top-level manifest
+> - `schema_version` must be `"v2.4"` to support `RemoteMCPServer` runtime type
   lifecycle/         — YAML lifecycle engine + operations:
     ├── parser.ts        — parseProjectYaml() — reads m365agents.yml into RawProjectModel
     ├── resolver.ts      — resolveLifecycle() — matches actions to registered drivers
@@ -173,8 +179,8 @@ packages/core-next/src/
     └── index.ts         — barrel exports
   project/           — createProjectOp (direct) + createProjectInteractive (question tree → scaffold → tracking ID)
   questions/         — Question tree infrastructure:
-    ├── questionNames.ts    — QuestionNames constants (20 canonical question names)
-    ├── commonQuestions.ts  — 15 reusable question factory functions
+    ├── questionNames.ts    — QuestionNames constants (22 canonical question names)
+    ├── commonQuestions.ts  — 18 reusable question factory functions
     ├── treeBuilder.ts      — buildQuestionTree(registry) — auto-generates IQTreeNode tree from TemplateRegistry
     ├── traverse.ts         — traverseQuestionTree(tree, ui, inputs) — iterative DFS with back-stack, subtree skipping
     └── index.ts            — Barrel exports
@@ -189,8 +195,8 @@ packages/core-next/src/
     │   ├── render.ts        — Mustache rendering (.tpl files, preserves undefined vars)
     │   ├── replaceMap.ts    — getTemplateReplaceMap() (appName, safeProjectName, etc.)
     │   └── types.ts         — TemplateInfo, ScaffoldContext, TemplateConfig, convertToLangKey()
-    ├── descriptors/     — Built-in template registrations (24 descriptors):
-    │   ├── declarativeAgent.ts — 11 DA descriptors (da/* IDs)
+    ├── descriptors/     — Built-in template registrations (26 descriptors):
+    │   ├── declarativeAgent.ts — 12 DA descriptors (da/* IDs, includes metaos-upgrade with inline scaffoldFn)
     │   ├── bot.ts              — 1 bot descriptor (echo only)
     │   ├── tab.ts              — 1 tab descriptor (basic only)
     │   ├── aiAgent.ts          — 3 AI agent descriptors (with LLM questions)
@@ -198,12 +204,15 @@ packages/core-next/src/
     │   ├── connector.ts        — 1 connector descriptor (with graph connector questions)
     │   ├── messageExtension.ts — 1 message extension descriptor (search-based)
     │   ├── openApi.ts          — 3 OpenAPI-backed descriptors (da, ai-agent, me)
+    │   ├── foundry.ts          — 1 Foundry Agent descriptor (questions: foundryEndpoint, foundryAgentId)
     │   └── index.ts            — registerBuiltinTemplates() + barrel exports
     └── openApi/         — OpenAPI scaffolding support:
         ├── specParserAdapter.ts — SpecParserAdapter interface + StubSpecParserAdapter + createSpecParserAdapter() factory
         ├── realSpecParserAdapter.ts — RealSpecParserAdapter backed by inline specParser module
         ├── scaffoldFn.ts        — makeOpenApiScaffoldFn() factory (validate → scaffold → parse → generate → write)
         └── index.ts             — Barrel exports
+  helpers/           — Template helper utilities:
+    └── metaOSHelper.ts  — MetaOS upgrade functions: copyExistMetaOSProject(), extendToDA(), unifyProjectID() (native fs, no fs-extra)
   specParser/          — Inline OpenAPI spec parser (merged from @microsoft/m365-spec-parser):
     ├── types.ts         — ParsedSpec, ValidationResult, ErrorType, WarningType, ProjectType, ParseOptions, AuthInfo, etc.
     ├── constants.ts     — SpecParserMessages, HTTPMethods, WellKnownNames, Limits, AdaptiveCardConstants
@@ -218,7 +227,7 @@ packages/core-next/src/
     ├── registry.ts      — DriverRegistry class + driverRegistry singleton
     ├── createDriver.ts  — createDriver() factory: Zod validation, telemetry, error normalization
     └── builtin/         — Built-in driver implementations:
-        ├── index.ts         — registerBuiltinDrivers() + builtinDrivers array (21 drivers)
+        ├── index.ts         — registerBuiltinDrivers() + builtinDrivers array (22 drivers)
         ├── file/
         │   ├── createOrUpdateEnvironmentFile.ts — .env file merge driver
         │   └── createOrUpdateJsonFile.ts       — JSON file deep-merge driver
@@ -233,7 +242,7 @@ packages/core-next/src/
         │   ├── create.ts            — Create/import Teams app in TDP
         │   ├── configure.ts         — Update Teams app config in TDP
         │   ├── update.ts            — Update Teams app in TDP (alias of configure)
-        │   ├── publishAppPackage.ts — Publish to org app catalog
+        │   ├── publishAppPackage.ts — Publish to org app catalog via Graph API (/beta/appCatalogs/teamsApps)
         │   └── extendToM365.ts      — Sideload app to M365 ecosystem (Outlook, Microsoft 365 app)
         ├── aadApp/
         │   ├── create.ts — Create Entra ID app via MS Graph
@@ -259,9 +268,9 @@ packages/core-next/src/
   http/              — createHttpClient (Axios + telemetry interceptors), retry/timeout helpers
   clients/           — Authenticated service clients:
     ├── teamsDevPortal/  — Teams Developer Portal API (app CRUD, validation, publishing, OAuth, API keys)
-    ├── graphApi/        — Microsoft Graph API (Entra ID app registration, updates, passwords)
+    ├── graphApi/        — Microsoft Graph API (Entra ID app registration, updates, passwords, app catalog publish)
     ├── azure/           — Azure ARM (deployments, Kudu zip deploy)
-    ├── m365/            — M365 PackageService (sideloading V1/V2 for classic and DA apps)
+    ├── m365/            — M365 PackageService (sideloading V1/V2 for classic and DA apps; AtkContext+token constructor, Result returns)
     └── index.ts         — Barrel re-export
   index.ts           — Public barrel exports (all modules)
 ```

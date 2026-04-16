@@ -22,6 +22,7 @@ Wire 5 stub CLI commands to their existing core-next DA operations, moving cover
 
 - `add spfx-web-part` dropped (no core-next backing)
 - `addMCPActionOp` NOT wired — too many required fields for flags-only
+  - **Update:** Wired in Gap 1 (session 2026-04-15). `add action --api-plugin-type mcp` routes to `addMCPActionAction()` with full MCP options.
 - `--agent-manifest-path` auto-discovered from project when not provided
 - All flags-only, CI-friendly (no interactive prompts)
 
