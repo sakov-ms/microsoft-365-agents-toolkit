@@ -263,6 +263,11 @@ export class GraphApiClient {
   /**
    * Update a previously published Teams app in the organization catalog.
    * Looks up the internal catalog ID via `getStagedApp`, then POSTs the new ZIP.
+   *
+   * If the update with `requiresReview=true` fails with 400, retries without
+   * the parameter. This handles apps that were sideloaded via Shared scope
+   * (`extendToM365`) — they appear in the catalog but don't support the
+   * admin-review update path.
    */
   async publishTeamsAppUpdate(
     teamsAppExternalId: string,
@@ -282,36 +287,46 @@ export class GraphApiClient {
       );
     }
 
+    const url = `${GraphApiClient.teamsAppsPath}/${staged.teamsAppId}/appDefinitions`;
+    const headers = { "Content-Type": "application/zip" };
+
+    let response;
     try {
-      const response = await sendWithRetry(() =>
-        this.betaAxios.post(
-          `${GraphApiClient.teamsAppsPath}/${staged.teamsAppId}/appDefinitions?requiresReview=true`,
-          file,
-          { headers: { "Content-Type": "application/zip" } }
+      response = await sendWithRetry(() =>
+        this.betaAxios.post(`${url}?requiresReview=true`, file, { headers })
+      );
+    } catch (e: unknown) {
+      // 400 can occur when the app was sideloaded (Shared scope) rather than
+      // published through the admin-review flow. Retry without requiresReview.
+      if (e && typeof e === "object" && "response" in e && (e as any).response?.status === 400) {
+        try {
+          response = await sendWithRetry(() => this.betaAxios.post(url, file, { headers }));
+        } catch (e2: unknown) {
+          return err(this.wrapError("publishTeamsAppUpdate", e2));
+        }
+      } else {
+        return err(this.wrapError("publishTeamsAppUpdate", e));
+      }
+    }
+
+    if (response?.data?.error || response?.data?.errorMessage) {
+      return err(
+        systemError(
+          "GraphPublishUpdateError",
+          `[publishTeamsAppUpdate] ${response.data.error?.message ?? response.data.errorMessage}`,
+          { source: "GraphApiClient" }
         )
       );
-
-      if (response?.data?.error || response?.data?.errorMessage) {
-        return err(
-          systemError(
-            "GraphPublishUpdateError",
-            `[publishTeamsAppUpdate] ${response.data.error?.message ?? response.data.errorMessage}`,
-            { source: "GraphApiClient" }
-          )
-        );
-      }
-
-      if (response?.data?.teamsAppId) {
-        return ok(response.data.teamsAppId as string);
-      }
-      if (response?.data?.id) {
-        return ok(response.data.id as string);
-      }
-      // Fall back to the known catalog ID
-      return ok(staged.teamsAppId);
-    } catch (e: unknown) {
-      return err(this.wrapError("publishTeamsAppUpdate", e));
     }
+
+    if (response?.data?.teamsAppId) {
+      return ok(response.data.teamsAppId as string);
+    }
+    if (response?.data?.id) {
+      return ok(response.data.id as string);
+    }
+    // Fall back to the known catalog ID
+    return ok(staged.teamsAppId);
   }
 
   /**

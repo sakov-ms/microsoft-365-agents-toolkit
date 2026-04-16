@@ -579,6 +579,66 @@ describe("GraphApiClient", () => {
       expect(result.isErr()).to.be.true;
       expect(result._unsafeUnwrapErr().kind).to.equal("system");
     });
+
+    it("falls back without requiresReview on 400 (sideloaded app)", async () => {
+      const stagedData = {
+        data: {
+          value: [
+            {
+              id: "cat-sideloaded",
+              displayName: "App",
+              appDefinitions: [{ publishingState: "published", lastModifiedDateTime: null }],
+            },
+          ],
+        },
+      };
+      mockAxios.get.resolves(stagedData);
+      // First POST (with requiresReview) → 400
+      const error400 = Object.assign(new Error("Bad Request"), {
+        response: { status: 400, data: { error: { code: "BadRequest", message: "Bad Request" } } },
+      });
+      mockAxios.post.onFirstCall().rejects(error400);
+      // Second POST (without requiresReview) → success
+      mockAxios.post.onSecondCall().resolves({ data: { teamsAppId: "fallback-ok" } });
+
+      const ctx = createMockContext();
+      const client = new GraphApiClient(ctx, "tok");
+
+      const result = await client.publishTeamsAppUpdate("ext-1", zipBuffer);
+      expect(result.isOk()).to.be.true;
+      expect(result._unsafeUnwrap()).to.equal("fallback-ok");
+      // First POST should have requiresReview, second should not
+      const firstUrl = mockAxios.post.firstCall.args[0] as string;
+      const secondUrl = mockAxios.post.secondCall.args[0] as string;
+      expect(firstUrl).to.include("?requiresReview=true");
+      expect(secondUrl).to.not.include("requiresReview");
+    });
+
+    it("returns error when 400 fallback also fails", async () => {
+      mockAxios.get.resolves({
+        data: {
+          value: [
+            {
+              id: "cat-fb-fail",
+              displayName: "App",
+              appDefinitions: [{ publishingState: "published", lastModifiedDateTime: null }],
+            },
+          ],
+        },
+      });
+      const error400 = Object.assign(new Error("Bad Request"), {
+        response: { status: 400, data: {} },
+      });
+      mockAxios.post.onFirstCall().rejects(error400);
+      mockAxios.post.onSecondCall().rejects(new Error("Also failed"));
+
+      const ctx = createMockContext();
+      const client = new GraphApiClient(ctx, "tok");
+
+      const result = await client.publishTeamsAppUpdate("ext-1", zipBuffer);
+      expect(result.isErr()).to.be.true;
+      expect(result._unsafeUnwrapErr().kind).to.equal("system");
+    });
   });
 
   describe("unpublishTeamsApp", () => {

@@ -26,6 +26,14 @@ export async function sendWithRetry<T>(
       // 5xx — will retry
       lastError = new Error(`Server error: ${response.status}`);
     } catch (error) {
+      // Don't retry client errors (4xx) except 429 Too Many Requests.
+      // Client errors like 400/404 won't resolve on retry.
+      if (error && typeof error === "object" && "response" in error) {
+        const status = (error as any).response?.status;
+        if (typeof status === "number" && status >= 400 && status < 500 && status !== 429) {
+          throw error;
+        }
+      }
       lastError = error;
     }
     if (attempt < retries) {
