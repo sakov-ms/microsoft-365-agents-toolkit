@@ -293,7 +293,7 @@ describe("teamsApp platform drivers", () => {
       const appId = "44444444-4444-4444-4444-444444444444";
       const zipPath = createAppPackage(appId);
 
-      // getStagedApp returns nothing
+      // getStagedApp returns nothing (Graph beta endpoint)
       mockAxios.get.resolves({ data: { value: [] } });
       // publishTeamsApp succeeds
       mockAxios.post.resolves({ data: { id: "pub-id-1" } });
@@ -303,24 +303,27 @@ describe("teamsApp platform drivers", () => {
 
       expect(result.isOk()).to.be.true;
       expect(result._unsafeUnwrap().outputs["TEAMS_APP_PUBLISHED_APP_ID"]).to.equal("pub-id-1");
-      // First POST should be to /api/publishing
-      expect(mockAxios.post.firstCall.args[0]).to.equal("/api/publishing");
+      // First POST should be to Graph /appCatalogs/teamsApps
+      expect(mockAxios.post.firstCall.args[0]).to.include(
+        "/appCatalogs/teamsApps?requiresReview=true"
+      );
     });
 
     it("update when app already published", async () => {
       const appId = "55555555-5555-5555-5555-555555555555";
       const zipPath = createAppPackage(appId);
 
-      // getStagedApp returns existing app
+      // getStagedApp returns existing app (Graph response format)
       mockAxios.get.resolves({
         data: {
           value: [
             {
+              id: "staged-55",
+              displayName: "App",
               appDefinitions: [
                 {
-                  teamsAppId: "staged-55",
-                  displayName: "App",
                   publishingState: "published",
+                  lastModifiedDateTime: null,
                 },
               ],
             },
@@ -335,9 +338,9 @@ describe("teamsApp platform drivers", () => {
 
       expect(result.isOk()).to.be.true;
       expect(result._unsafeUnwrap().outputs["TEAMS_APP_PUBLISHED_APP_ID"]).to.equal("updated-55");
-      // POST should be to the update endpoint
+      // POST should be to the Graph appDefinitions update endpoint
       expect(mockAxios.post.firstCall.args[0]).to.include(
-        "/api/publishing/staged-55/appdefinitions"
+        "/appCatalogs/teamsApps/staged-55/appDefinitions?requiresReview=true"
       );
     });
 

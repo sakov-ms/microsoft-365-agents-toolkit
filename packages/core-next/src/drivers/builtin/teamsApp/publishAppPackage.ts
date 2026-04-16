@@ -8,8 +8,8 @@ import * as path from "node:path";
 import AdmZip from "adm-zip";
 import { createDriver } from "../../createDriver";
 import { userError, systemError } from "../../../core/error";
-import { TeamsDevPortalClient } from "../../../clients/teamsDevPortal/client";
-import { appStudioScopes } from "../../../clients/teamsDevPortal/types";
+import { GraphApiClient } from "../../../clients/graphApi/client";
+import { graphAppCatalogScopes } from "../../../clients/graphApi/types";
 
 const inputSchema = z.object({
   /** Path to the zipped app package (.zip) */
@@ -73,9 +73,9 @@ export const publishAppPackageDriver = createDriver({
       );
     }
 
-    // Acquire M365 token
+    // Acquire M365 token with Graph app catalog scopes
     const tokenRes = await ctx.auth.m365TokenProvider.getAccessToken({
-      scopes: appStudioScopes(),
+      scopes: graphAppCatalogScopes(),
     });
     if (tokenRes.isErr()) {
       return err(
@@ -85,7 +85,7 @@ export const publishAppPackageDriver = createDriver({
         })
       );
     }
-    const client = new TeamsDevPortalClient(ctx, tokenRes.value);
+    const client = new GraphApiClient(ctx, tokenRes.value);
 
     // Check if already published
     const stagedRes = await client.getStagedApp(teamsAppId);

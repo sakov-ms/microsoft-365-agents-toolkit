@@ -7,7 +7,15 @@ import { AtkContext } from "../../core/context";
 import { AtkError, userError, systemError } from "../../core/error";
 import { createHttpClient } from "../../http/httpClient";
 import { sendWithRetry } from "../../http/retry";
-import { AADApplication, AadOwner, PasswordCredential, GRAPH_BASE_URL } from "./types";
+import {
+  AADApplication,
+  AadOwner,
+  PasswordCredential,
+  PublishedAppDefinition,
+  PublishingState,
+  GRAPH_BASE_URL,
+  GRAPH_BETA_URL,
+} from "./types";
 
 /**
  * Client for Microsoft Graph API — Entra ID (Azure AD) application operations.
@@ -16,11 +24,16 @@ import { AADApplication, AadOwner, PasswordCredential, GRAPH_BASE_URL } from "./
  */
 export class GraphApiClient {
   private readonly axios: AxiosInstance;
+  private readonly betaAxios: AxiosInstance;
 
   constructor(ctx: AtkContext, token: string) {
     this.axios = createHttpClient(ctx, { baseURL: GRAPH_BASE_URL });
     this.axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     this.axios.defaults.headers.common["Content-Type"] = "application/json";
+
+    this.betaAxios = createHttpClient(ctx, { baseURL: GRAPH_BETA_URL });
+    this.betaAxios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    this.betaAxios.defaults.headers.common["Content-Type"] = "application/json";
   }
 
   /**
@@ -129,6 +142,195 @@ export class GraphApiClient {
       return ok(undefined);
     } catch (e: unknown) {
       return err(this.wrapError("addOwner", e));
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  App Catalog — publish Teams apps via Graph                        */
+  /* ------------------------------------------------------------------ */
+
+  private static readonly teamsAppsPath = "/appCatalogs/teamsApps";
+
+  /**
+   * Check if a Teams app is already published in the tenant catalog.
+   * Returns the latest published definition, or `undefined` if not found.
+   * Swallows all errors and returns `undefined` (mirrors fx-core behavior).
+   */
+  async getStagedApp(
+    teamsAppExternalId: string
+  ): Promise<Result<PublishedAppDefinition | undefined, AtkError>> {
+    try {
+      const response = await sendWithRetry(() =>
+        this.betaAxios.get(
+          `${GraphApiClient.teamsAppsPath}?$filter=externalId eq '${teamsAppExternalId}'&$expand=appDefinitions`
+        )
+      );
+
+      if (!response?.data?.value || response.data.value.length === 0) {
+        return ok(undefined);
+      }
+
+      const appDefinitions = response.data.value[0].appDefinitions;
+      if (!Array.isArray(appDefinitions) || appDefinitions.length === 0) {
+        return ok(undefined);
+      }
+
+      const latest = appDefinitions[appDefinitions.length - 1];
+      return ok({
+        lastModifiedDateTime: latest.lastModifiedDateTime
+          ? new Date(latest.lastModifiedDateTime)
+          : null,
+        publishingState: latest.publishingState as PublishingState,
+        teamsAppId: response.data.value[0].id,
+        displayName: response.data.value[0].displayName,
+      });
+    } catch {
+      // 404 or other failures — treat as "not published"
+      return ok(undefined);
+    }
+  }
+
+  /**
+   * Publish a Teams app to the organization catalog (first publish).
+   *
+   * Handles resilient edge cases from the Graph API:
+   * - BadGateway → falls back to getStagedApp to retrieve the ID
+   * - 409 Conflict / AppDefinitionAlreadyExists → falls through to publishTeamsAppUpdate
+   */
+  async publishTeamsApp(
+    teamsAppExternalId: string,
+    file: Buffer
+  ): Promise<Result<string, AtkError>> {
+    try {
+      const response = await sendWithRetry(() =>
+        this.betaAxios.post(`${GraphApiClient.teamsAppsPath}?requiresReview=true`, file, {
+          headers: { "Content-Type": "application/zip" },
+        })
+      );
+
+      // Graph may return 200 with an error body
+      if (response?.data?.error) {
+        if (response.data.error.code === "BadGateway") {
+          const stagedRes = await this.getStagedApp(teamsAppExternalId);
+          if (stagedRes.isOk() && stagedRes.value) {
+            return ok(stagedRes.value.teamsAppId);
+          }
+        }
+
+        if (
+          response.data.error.code === "Conflict" &&
+          response.data.error.innerError?.code === "AppDefinitionAlreadyExists"
+        ) {
+          return this.publishTeamsAppUpdate(teamsAppExternalId, file);
+        }
+
+        return err(
+          systemError(
+            "GraphPublishError",
+            `[publishTeamsApp] ${response.data.error.message ?? JSON.stringify(response.data.error)}`,
+            { source: "GraphApiClient" }
+          )
+        );
+      }
+
+      if (response?.data?.id) {
+        return ok(response.data.id as string);
+      }
+
+      // Fallback: query the staged app to get the ID
+      const stagedRes = await this.getStagedApp(teamsAppExternalId);
+      if (stagedRes.isOk() && stagedRes.value?.teamsAppId) {
+        return ok(stagedRes.value.teamsAppId);
+      }
+
+      return err(
+        systemError("GraphPublishError", "[publishTeamsApp] Empty response from Graph API", {
+          source: "GraphApiClient",
+        })
+      );
+    } catch (e: unknown) {
+      // HTTP 409 — app already exists, fall through to update
+      if (e && typeof e === "object" && "response" in e) {
+        const status = (e as any).response?.status;
+        if (status === 409) {
+          return this.publishTeamsAppUpdate(teamsAppExternalId, file);
+        }
+      }
+      return err(this.wrapError("publishTeamsApp", e));
+    }
+  }
+
+  /**
+   * Update a previously published Teams app in the organization catalog.
+   * Looks up the internal catalog ID via `getStagedApp`, then POSTs the new ZIP.
+   */
+  async publishTeamsAppUpdate(
+    teamsAppExternalId: string,
+    file: Buffer
+  ): Promise<Result<string, AtkError>> {
+    const stagedRes = await this.getStagedApp(teamsAppExternalId);
+    if (stagedRes.isErr()) return err(stagedRes.error);
+
+    const staged = stagedRes.value;
+    if (!staged) {
+      return err(
+        userError(
+          "TeamsAppNotPublished",
+          `[publishTeamsAppUpdate] Published app not found for externalId: ${teamsAppExternalId}`,
+          { source: "GraphApiClient" }
+        )
+      );
+    }
+
+    try {
+      const response = await sendWithRetry(() =>
+        this.betaAxios.post(
+          `${GraphApiClient.teamsAppsPath}/${staged.teamsAppId}/appDefinitions?requiresReview=true`,
+          file,
+          { headers: { "Content-Type": "application/zip" } }
+        )
+      );
+
+      if (response?.data?.error || response?.data?.errorMessage) {
+        return err(
+          systemError(
+            "GraphPublishUpdateError",
+            `[publishTeamsAppUpdate] ${response.data.error?.message ?? response.data.errorMessage}`,
+            { source: "GraphApiClient" }
+          )
+        );
+      }
+
+      if (response?.data?.teamsAppId) {
+        return ok(response.data.teamsAppId as string);
+      }
+      if (response?.data?.id) {
+        return ok(response.data.id as string);
+      }
+      // Fall back to the known catalog ID
+      return ok(staged.teamsAppId);
+    } catch (e: unknown) {
+      return err(this.wrapError("publishTeamsAppUpdate", e));
+    }
+  }
+
+  /**
+   * Remove a published Teams app from the organization catalog.
+   *
+   * @param catalogAppId The app catalog internal ID (returned by `publishTeamsApp` /
+   *   `getStagedApp`), **not** the manifest externalId.
+   *
+   * Graph endpoint: `DELETE /appCatalogs/teamsApps/{id}`
+   * Returns 204 No Content on success.
+   */
+  async unpublishTeamsApp(catalogAppId: string): Promise<Result<void, AtkError>> {
+    try {
+      await sendWithRetry(() =>
+        this.betaAxios.delete(`${GraphApiClient.teamsAppsPath}/${catalogAppId}`)
+      );
+      return ok(undefined);
+    } catch (e: unknown) {
+      return err(this.wrapError("unpublishTeamsApp", e));
     }
   }
 

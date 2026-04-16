@@ -113,18 +113,53 @@ export enum BotChannelType {
 }
 
 /* ------------------------------------------------------------------ */
+/*  App Catalog (publishing) types                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Publishing state of an app in the tenant app catalog.
+ */
+export enum PublishingState {
+  submitted = "submitted",
+  published = "published",
+  rejected = "rejected",
+}
+
+/**
+ * Published app definition from the Graph `/appCatalogs/teamsApps` endpoint.
+ */
+export interface PublishedAppDefinition {
+  teamsAppId: string;
+  displayName: string;
+  publishingState: PublishingState;
+  lastModifiedDateTime: Date | null;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
 /**
- * MS Graph API base URL.
+ * MS Graph API base URL (v1.0).
  * Sovereign-cloud support can be added later by making this configurable.
  */
 export const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
+
+/**
+ * MS Graph API beta endpoint — required for `/appCatalogs/teamsApps` publish operations.
+ */
+export const GRAPH_BETA_URL = "https://graph.microsoft.com/beta";
 
 /**
  * OAuth scopes for MS Graph application management.
  */
 export function graphScopes(): string[] {
   return ["Application.ReadWrite.All"];
+}
+
+/**
+ * OAuth scopes for publishing apps to the tenant app catalog.
+ */
+export function graphAppCatalogScopes(): string[] {
+  return ["AppCatalog.ReadWrite.All"];
 }
