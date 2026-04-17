@@ -57,6 +57,16 @@ export interface AssertionResult {
   passed: boolean;
   expected?: string;
   actual?: string;
+  /** Failure severity. Defaults to "error" when omitted. */
+  severity?: "error" | "warning";
+  /**
+   * Assertion tier:
+   * - "shape"       — env-var presence, file existence, format regex
+   * - "content"     — semantic parse / cross-field consistency (no network)
+   * - "integration" — remote lookup (Graph, TDP, ARM, HTTP)
+   * Defaults to "shape" when omitted.
+   */
+  tier?: "shape" | "content" | "integration";
 }
 
 // ---------------------------------------------------------------------------

@@ -85,6 +85,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["common", "csharp"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.Basic),
     displayOrder: 1,
+    tags: ["teamsApp", "publishable", "declarativeAgent"],
   },
   {
     id: "da/api-plugin-no-auth",
@@ -94,6 +95,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.ActionFromScratch),
     displayOrder: 2,
+    tags: ["teamsApp", "publishable", "declarativeAgent", "apiPlugin"],
   },
   {
     id: "da/api-plugin-oauth",
@@ -103,6 +105,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.ActionFromScratchOAuth),
     displayOrder: 3,
+    tags: ["teamsApp", "publishable", "declarativeAgent", "apiPlugin", "apiAuthOAuth", "aad"],
   },
   {
     id: "da/api-plugin-bearer",
@@ -112,6 +115,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.ActionFromScratchBearer),
     displayOrder: 4,
+    tags: ["teamsApp", "publishable", "declarativeAgent", "apiPlugin", "apiAuthApiKey"],
   },
   {
     id: "da/api-plugin-entra-sso",
@@ -121,6 +125,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.ActionFromScratchEntra),
     displayOrder: 5,
+    tags: ["teamsApp", "publishable", "declarativeAgent", "apiPlugin", "apiAuthOAuth"],
   },
   {
     id: "da/existing-action",
@@ -130,6 +135,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["common"],
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.ExistingAction),
     displayOrder: 6,
+    tags: ["teamsApp", "publishable", "declarativeAgent", "apiPlugin"],
   },
   {
     id: "da/typespec",
@@ -185,6 +191,7 @@ export const daTemplateDescriptors: TemplateDescriptor[] = [
     scaffoldFn: makeDAScaffoldFn(DATemplateNames.MetaOS),
     displayOrder: 11,
     featureFlag: "DAMetaOS",
+    tags: ["teamsApp", "publishable", "declarativeAgent"],
   },
   {
     id: "da/metaos-upgrade",

@@ -70,6 +70,7 @@ export const aiAgentTemplateDescriptors: TemplateDescriptor[] = [
     scaffoldFn: makeAiAgentScaffoldFn(AiAgentTemplateNames.Chat),
     displayOrder: 1,
     questions: llmQuestions,
+    tags: ["teamsApp", "publishable", "bot"],
   },
   {
     id: "ai-agent/rag-ai-search",
@@ -80,6 +81,7 @@ export const aiAgentTemplateDescriptors: TemplateDescriptor[] = [
     scaffoldFn: makeAiAgentScaffoldFn(AiAgentTemplateNames.RagAiSearch),
     displayOrder: 2,
     questions: llmQuestions,
+    tags: ["teamsApp", "publishable", "bot"],
   },
   {
     id: "ai-agent/rag-custom",
@@ -90,5 +92,6 @@ export const aiAgentTemplateDescriptors: TemplateDescriptor[] = [
     scaffoldFn: makeAiAgentScaffoldFn(AiAgentTemplateNames.RagCustom),
     displayOrder: 3,
     questions: llmQuestions,
+    tags: ["teamsApp", "publishable", "bot"],
   },
 ];

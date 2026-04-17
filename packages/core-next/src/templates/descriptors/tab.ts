@@ -51,5 +51,6 @@ export const tabTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "csharp"],
     scaffoldFn: makeTabScaffoldFn(TabTemplateNames.Basic),
     displayOrder: 1,
+    tags: ["teamsApp", "publishable"],
   },
 ];

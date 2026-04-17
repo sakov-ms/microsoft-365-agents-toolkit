@@ -51,5 +51,6 @@ export const botTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript", "python", "csharp"],
     scaffoldFn: makeBotScaffoldFn(BotTemplateNames.Echo),
     displayOrder: 1,
+    tags: ["teamsApp", "publishable", "bot"],
   },
 ];

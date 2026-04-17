@@ -65,6 +65,7 @@ export const engineAgentTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript", "python"],
     scaffoldFn: makeEngineAgentScaffoldFn(EngineAgentTemplateNames.Basic),
     displayOrder: 1,
+    tags: ["teamsApp", "publishable", "bot"],
   },
   {
     id: "engine-agent/function-calling",
@@ -74,6 +75,7 @@ export const engineAgentTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "javascript", "python", "csharp"],
     scaffoldFn: makeEngineAgentScaffoldFn(EngineAgentTemplateNames.FunctionCalling),
     displayOrder: 2,
+    tags: ["teamsApp", "publishable", "bot"],
   },
   {
     id: "engine-agent/teams-collaborator",
@@ -83,5 +85,6 @@ export const engineAgentTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "csharp"],
     scaffoldFn: makeEngineAgentScaffoldFn(EngineAgentTemplateNames.TeamsCollaborator),
     displayOrder: 4,
+    tags: ["teamsApp", "publishable", "bot"],
   },
 ];

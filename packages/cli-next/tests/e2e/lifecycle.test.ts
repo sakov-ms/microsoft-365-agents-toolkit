@@ -131,9 +131,11 @@ async function loadEnvMap(projectPath: string, envName: string): Promise<Map<str
 /**
  * Determine which validators to run based on template tags
  * and which lifecycle phases to execute based on template YAML.
+ *
+ * Returns a defensive copy because callers `.push()` ad-hoc tags onto it.
  */
 function getValidationTags(template: TemplateDescriptor): string[] {
-  return template.tags ?? [];
+  return [...(template.tags ?? [])];
 }
 
 /**

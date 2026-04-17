@@ -51,5 +51,6 @@ export const messageExtensionTemplateDescriptors: TemplateDescriptor[] = [
     languages: ["typescript", "python", "csharp"],
     scaffoldFn: makeMEScaffoldFn(MessageExtensionTemplateNames.SearchBased),
     displayOrder: 1,
+    tags: ["teamsApp", "publishable"],
   },
 ];
