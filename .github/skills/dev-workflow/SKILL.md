@@ -85,9 +85,9 @@ Follow these coding standards:
    - `SystemError` for unrecoverable errors (service failures)
    - Always use `getLocalizedString(key, ...params)` for user-facing messages
 
-6. **Localization** — User-facing strings go in `package.nls.json` (default) with translations in `package.nls.{locale}.json`. Reference strings via `getLocalizedString("key")` or `getDefaultString("key")` from `common/localizeUtils`.
+7. **Localization** — User-facing strings go in `package.nls.json` (default) with translations in `package.nls.{locale}.json`. Reference strings via `getLocalizedString("key")` or `getDefaultString("key")` from `common/localizeUtils`.
 
-7. **Architecture patterns** — See [architecture reference](./references/architecture.md)
+8. **Architecture patterns** — See [architecture reference](./references/architecture.md)
 
 ### Phase 4 — Test
 

@@ -1,6 +1,7 @@
 ---
 name: lint-format
 description: "Lint and format pipeline for core-next and cli-next packages. Use when: fixing lint errors, fixing format errors, prettier conflicts, eslint-plugin-prettier disagreements, precommit hook issues, CI lint failures, postbuild formatting, configuring lint-staged."
+argument-hint: "Describe the lint/format issue or which package is failing"
 ---
 
 # Lint & Format Pipeline
