@@ -398,3 +398,7 @@ package-lock.json
 # add claude related ignores
 .claude/
 CLAUDE.md
+# vercel-labs/skills CLI scratch dirs (created by 'npx skills add')
+/skills/
+/skills-temp/
+
