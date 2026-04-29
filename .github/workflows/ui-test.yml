@@ -107,14 +107,21 @@ jobs:
         with:
           node-version: 22
       
-      - uses: pnpm/action-setup@v4
+      - name: Update npm packages for UI Test
+        working-directory: packages/tests
+        run: |
+          npm install @microsoft/teamsfx-core@latest @microsoft/teamsfx-api@latest @microsoft/m365agentstoolkit-cli@latest
+
+      - name: Install npm packages
+        working-directory: packages/tests
+        run: |
+          npm install
 
       - name: add sample cases into pvt file
         if: ${{ github.event.schedule == '0 18 * * *' || github.event.inputs.test-case == '' }}
         working-directory: packages/tests
         run: |
           curl -O https://raw.githubusercontent.com/OfficeDev/microsoft-365-agents-toolkit-samples/refs/heads/dev/.config/samples-config-v3.json
-          pnpm --filter=@microsoft/teamsfx-test install
           npx ts-node ./scripts/sampleCaseCreate.ts
 
       - name: setup matrix
@@ -517,10 +524,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 22
-      - uses: pnpm/action-setup@v4
-      - name: setup project
-        run: |
-          pnpm --filter=@microsoft/teamsfx-test install
+
       - uses: azure/login@v2
         with:
           client-id: ${{secrets.DEVOPS_CLIENT_ID}}
